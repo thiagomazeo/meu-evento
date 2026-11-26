@@ -116,6 +116,7 @@ export default function Home() {
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [nomeProdutora, setNomeProdutora] = useState('');
   const [erroAuth, setErroAuth] = useState('');
+  const [mensagemAuth, setMensagemAuth] = useState('');
   const [processandoAuth, setProcessandoAuth] = useState(false);
 
   // Navegação e Dados
@@ -253,6 +254,7 @@ export default function Home() {
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
     setErroAuth('');
+    setMensagemAuth('');
     setProcessandoAuth(true);
 
     try {
@@ -305,6 +307,28 @@ export default function Home() {
       setErroAuth(err.message || 'Ocorreu um erro na autenticação.');
     } finally {
       setProcessandoAuth(false);
+    }
+  }
+
+  async function handleEsqueciSenha() {
+    setErroAuth('');
+    setMensagemAuth('');
+
+    if (!email) {
+      setErroAuth('Digite seu e-mail acima para receber o link de recuperação.');
+      return;
+    }
+
+    setProcessandoAuth(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    setProcessandoAuth(false);
+
+    if (error) {
+      setErroAuth(error.message || 'Erro ao enviar e-mail de recuperação.');
+    } else {
+      setMensagemAuth('Enviamos um link de recuperação para o seu e-mail.');
     }
   }
 
@@ -500,7 +524,11 @@ export default function Home() {
           <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
             <button
               type="button"
-              onClick={() => setModoAuth('login')}
+              onClick={() => {
+                setModoAuth('login');
+                setErroAuth('');
+                setMensagemAuth('');
+              }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
                 modoAuth === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
               }`}
@@ -509,7 +537,11 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => setModoAuth('registo')}
+              onClick={() => {
+                setModoAuth('registo');
+                setErroAuth('');
+                setMensagemAuth('');
+              }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
                 modoAuth === 'registo' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
               }`}
@@ -575,9 +607,28 @@ export default function Home() {
               />
             </div>
 
+            {modoAuth === 'login' && (
+              <div className="flex justify-end -mt-2">
+                <button
+                  type="button"
+                  onClick={handleEsqueciSenha}
+                  disabled={processandoAuth}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
+
             {erroAuth && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
                 {erroAuth}
+              </div>
+            )}
+
+            {mensagemAuth && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg">
+                {mensagemAuth}
               </div>
             )}
 
