@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { Suspense, useEffect, useState, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   formatarMoeda,
@@ -91,7 +91,7 @@ type TaxaImposto = {
   valor_ou_percentual: number;
 };
 
-export default function PaginaEvento({
+function ConteudoEvento({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -1487,5 +1487,20 @@ export default function PaginaEvento({
         )}
       </main>
     </div>
+  );
+}
+export default function PaginaEvento({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center text-slate-500">Carregando evento...</div>
+      }
+    >
+      <ConteudoEvento params={params} />
+    </Suspense>
   );
 }
