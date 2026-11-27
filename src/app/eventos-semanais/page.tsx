@@ -1,8 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import {
+import React, { Suspense, useState, useEffect, useMemo } from 'react';import {
   LayoutDashboard,
   Wallet,
   Wine,
@@ -361,7 +360,7 @@ function computeEventMetrics(event) {
 // COMPONENTE PRINCIPAL: Eventos Semanais (FechaEvento Pro)
 // ============================================================================
 
-export default function EventosSemanaisPage() {
+function ConteudoEventosSemanais() {
   const [events, setEvents] = useState([createInitialAkatuEvent()]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -375,7 +374,7 @@ export default function EventosSemanaisPage() {
 
   const [newEventForm, setNewEventForm] = useState({
     name: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: '',
     venue: 'Akatu Villa',
     cloneStructure: true,
   });
@@ -386,7 +385,8 @@ export default function EventosSemanaisPage() {
   const [prodSubTab, setProdSubTab] = useState('production');
 
   // Carregamento seguro do localStorage apenas no navegador
-  useEffect(() => {
+ useEffect(() => {
+    setNewEventForm((f) => ({ ...f, date: new Date().toISOString().slice(0, 10) }));
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -2487,5 +2487,16 @@ export default function EventosSemanaisPage() {
         </div>
       )}
     </div>
+  );
+}
+export default function EventosSemanaisPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center text-slate-500">A carregar Eventos Semanais...</div>
+      }
+    >
+      <ConteudoEventosSemanais />
+    </Suspense>
   );
 }
