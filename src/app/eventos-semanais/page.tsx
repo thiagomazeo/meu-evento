@@ -1,7 +1,8 @@
 // @ts-nocheck
 'use client';
 
-import React, { Suspense, useState, useEffect, useMemo } from 'react';import {
+import React, { Suspense, useState, useEffect, useMemo } from 'react';
+import {
   LayoutDashboard,
   Wallet,
   Wine,
@@ -34,10 +35,6 @@ import React, { Suspense, useState, useEffect, useMemo } from 'react';import {
   ArrowLeft,
 } from 'lucide-react';
 
-// ============================================================================
-// UTILITÁRIOS DE FORMATAÇÃO E CÁLCULO
-// ============================================================================
-
 const STORAGE_KEY = 'fechaevento_pro_v1_data';
 
 const formatBRL = (value) => {
@@ -60,10 +57,6 @@ const normalizeText = (str) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
-
-// ============================================================================
-// DADOS REAIS PRÉ-CARREGADOS (PLANILHA AKATU VILLA - 20/11/2026)
-// ============================================================================
 
 const createInitialAkatuEvent = () => ({
   id: 'akatu-2026-11-20',
@@ -219,10 +212,6 @@ const createInitialAkatuEvent = () => ({
   ],
 });
 
-// ============================================================================
-// MOTOR DE CÁLCULO E AUDITORIA DO EVENTO
-// ============================================================================
-
 function computeEventMetrics(event) {
   let totalDebito = 0;
   let totalCredito = 0;
@@ -254,7 +243,6 @@ function computeEventMetrics(event) {
   const totalAlimentacao = round2(
     event.foods.reduce((acc, item) => acc + round2((Number(item.qty) || 0) * (Number(item.unitPrice) || 0)), 0)
   );
-
   const totalStaff = round2(
     event.staff.reduce((acc, item) => acc + round2((Number(item.qty) || 0) * (Number(item.unitPrice) || 0)), 0)
   );
@@ -282,7 +270,7 @@ function computeEventMetrics(event) {
   const baseComissao = round2(faturamento + centralEventos);
 
   const totalPromoters = round2(
-    event.promoters.reduce((acc, p) => acc + (baseComissao * ((Number(p.percent) || 0) / 100)), 0)
+    event.promoters.reduce((acc, p) => acc + baseComissao * ((Number(p.percent) || 0) / 100), 0)
   );
 
   const custoTotal = round2(custoOperacional + totalBebidas + totalAlimentacao + taxaSistema + totalProducao);
@@ -356,10 +344,6 @@ function computeEventMetrics(event) {
   };
 }
 
-// ============================================================================
-// COMPONENTE PRINCIPAL: Eventos Semanais (FechaEvento Pro)
-// ============================================================================
-
 function ConteudoEventosSemanais() {
   const [events, setEvents] = useState([createInitialAkatuEvent()]);
   const [hydrated, setHydrated] = useState(false);
@@ -384,8 +368,7 @@ function ConteudoEventosSemanais() {
   const [onlyConsumed, setOnlyConsumed] = useState(false);
   const [prodSubTab, setProdSubTab] = useState('production');
 
-  // Carregamento seguro do localStorage apenas no navegador
- useEffect(() => {
+  useEffect(() => {
     setNewEventForm((f) => ({ ...f, date: new Date().toISOString().slice(0, 10) }));
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -403,7 +386,6 @@ function ConteudoEventosSemanais() {
     }
   }, []);
 
-  // Persistência automática
   useEffect(() => {
     if (!hydrated) return;
     try {
@@ -445,25 +427,12 @@ function ConteudoEventosSemanais() {
       ? {
           id: newId,
           name: newEventForm.name.trim(),
-          date: newEventForm.date,
+          date: newEventForm.date || new Date().toISOString().slice(0, 10),
           venue: newEventForm.venue.trim() || base.venue,
           status: 'Em Conferência',
           publicCount: 0,
-          dreInputs: {
-            centralEventos: 0,
-            taxaSistema: 0,
-            estorno: 0,
-            valorRecebidoAkatu: 0,
-          },
-          cashiers: base.cashiers.map((c) => ({
-            ...c,
-            id: uid(),
-            debito: 0,
-            credito: 0,
-            pix: 0,
-            dinheiro: 0,
-            sistema: 0,
-          })),
+          dreInputs: { centralEventos: 0, taxaSistema: 0, estorno: 0, valorRecebidoAkatu: 0 },
+          cashiers: base.cashiers.map((c) => ({ ...c, id: uid(), debito: 0, credito: 0, pix: 0, dinheiro: 0, sistema: 0 })),
           beverages: base.beverages.map((b) => ({ ...b, id: uid(), qty: 0 })),
           foods: base.foods.map((f) => ({ ...f, id: uid(), qty: 0 })),
           staff: base.staff.map((s) => ({ ...s, id: uid(), qty: 0 })),
@@ -477,7 +446,7 @@ function ConteudoEventosSemanais() {
       : {
           id: newId,
           name: newEventForm.name.trim(),
-          date: newEventForm.date,
+          date: newEventForm.date || new Date().toISOString().slice(0, 10),
           venue: newEventForm.venue.trim() || 'Local do Evento',
           status: 'Em Conferência',
           publicCount: 0,
@@ -574,51 +543,25 @@ function ConteudoEventosSemanais() {
       ['Produto', 'Quantidade', 'Valor Unitario', 'Total'],
       ...activeEvent.beverages
         .filter((b) => b.qty > 0)
-        .map((b) => [
-          b.name,
-          String(b.qty),
-          b.unitPrice.toFixed(2).replace('.', ','),
-          round2(b.qty * b.unitPrice).toFixed(2).replace('.', ','),
-        ]),
+        .map((b) => [b.name, String(b.qty), b.unitPrice.toFixed(2).replace('.', ','), round2(b.qty * b.unitPrice).toFixed(2).replace('.', ',')]),
       [],
       ['=== CONSUMO ALIMENTACAO (ITENS > 0) ==='],
       ['Produto', 'Quantidade', 'Valor Unitario', 'Total'],
       ...activeEvent.foods
         .filter((f) => f.qty > 0)
-        .map((f) => [
-          f.name,
-          String(f.qty),
-          f.unitPrice.toFixed(2).replace('.', ','),
-          round2(f.qty * f.unitPrice).toFixed(2).replace('.', ','),
-        ]),
+        .map((f) => [f.name, String(f.qty), f.unitPrice.toFixed(2).replace('.', ','), round2(f.qty * f.unitPrice).toFixed(2).replace('.', ',')]),
       [],
       ['=== MAO DE OBRA / FREELANCERS ==='],
       ['Funcao', 'Qtd', 'Valor Unitario', 'Total'],
-      ...activeEvent.staff.map((s) => [
-        s.name,
-        String(s.qty),
-        s.unitPrice.toFixed(2).replace('.', ','),
-        round2(s.qty * s.unitPrice).toFixed(2).replace('.', ','),
-      ]),
+      ...activeEvent.staff.map((s) => [s.name, String(s.qty), s.unitPrice.toFixed(2).replace('.', ','), round2(s.qty * s.unitPrice).toFixed(2).replace('.', ',')]),
       [],
       ['=== CUSTOS GERAIS / ESTRUTURA ==='],
       ['Item', 'Qtd', 'Valor Unitario', 'Total'],
-      ...activeEvent.generalCosts.map((g) => [
-        g.name,
-        String(g.qty),
-        g.unitPrice.toFixed(2).replace('.', ','),
-        round2(g.qty * g.unitPrice).toFixed(2).replace('.', ','),
-      ]),
+      ...activeEvent.generalCosts.map((g) => [g.name, String(g.qty), g.unitPrice.toFixed(2).replace('.', ','), round2(g.qty * g.unitPrice).toFixed(2).replace('.', ',')]),
       [],
       ['=== PRODUCAO & ANIVERSARIOS ==='],
       ['Beneficiario', 'Item', 'Qtd', 'Valor Unitario', 'Total'],
-      ...activeEvent.production.map((p) => [
-        p.beneficiary,
-        p.item,
-        String(p.qty),
-        p.unitPrice.toFixed(2).replace('.', ','),
-        round2(p.qty * p.unitPrice).toFixed(2).replace('.', ','),
-      ]),
+      ...activeEvent.production.map((p) => [p.beneficiary, p.item, String(p.qty), p.unitPrice.toFixed(2).replace('.', ','), round2(p.qty * p.unitPrice).toFixed(2).replace('.', ',')]),
       [],
       ['=== CONSUMO 50% (AUDITORIA) ==='],
       ['Pessoa', 'Item', 'Pagamento', 'Qtd', 'Valor Unitario', 'Total', 'Autorizado Por'],
@@ -648,26 +591,12 @@ function ConteudoEventosSemanais() {
 
   const navItems = [
     { id: 'dre', label: 'Resumo & DRE', icon: LayoutDashboard },
-    {
-      id: 'cashiers',
-      label: 'Conferência de Caixas',
-      icon: Wallet,
-      badge: Math.abs(metrics.totalCashierDiff) >= 0.01 ? 'Erro' : null,
-    },
+    { id: 'cashiers', label: 'Conferência de Caixas', icon: Wallet, badge: Math.abs(metrics.totalCashierDiff) >= 0.01 ? 'Erro' : null },
     { id: 'catalog', label: 'Bebidas & Alimentação', icon: Wine },
     { id: 'operations', label: 'Equipe, Estrutura & Atrações', icon: Users },
-    {
-      id: 'production',
-      label: 'Produção, Aniversários & 50%',
-      icon: Gift,
-      badge: metrics.priceMismatches.length > 0 ? `${metrics.priceMismatches.length}` : null,
-    },
+    { id: 'production', label: 'Produção, Aniversários & 50%', icon: Gift, badge: metrics.priceMismatches.length > 0 ? `${metrics.priceMismatches.length}` : null },
     { id: 'audit', label: 'Conferência & Exportar', icon: CheckSquare },
   ];
-
-  // ============================================================================
-  // RENDERIZAÇÃO DOS MÓDULOS
-  // ============================================================================
 
   const renderDREModule = () => {
     const costBreakdown = [
@@ -681,11 +610,7 @@ function ConteudoEventosSemanais() {
       { label: 'Produção & Aniversários', value: metrics.totalProducao, color: 'bg-rose-500' },
     ].sort((a, b) => b.value - a.value);
 
-    const totalAllCosts = Math.max(
-      costBreakdown.reduce((acc, c) => acc + c.value, 0),
-      1
-    );
-
+    const totalAllCosts = Math.max(costBreakdown.reduce((acc, c) => acc + c.value, 0), 1);
     const isCashierOk = Math.abs(metrics.totalCashierDiff) < 0.01 && metrics.cashierDivergences.length === 0;
 
     return (
@@ -699,15 +624,11 @@ function ConteudoEventosSemanais() {
                   <div>
                     <p className="font-semibold text-sm">Divergência detectada na Conferência de Caixas</p>
                     <p className="text-xs text-rose-700 mt-0.5">
-                      Diferença total de <span className="font-bold tabular-nums">{formatBRL(metrics.totalCashierDiff)}</span> em{' '}
-                      {metrics.cashierDivergences.length} operador(es). Revise antes de aprovar o fechamento.
+                      Diferença total de <span className="font-bold tabular-nums">{formatBRL(metrics.totalCashierDiff)}</span> em {metrics.cashierDivergences.length} operador(es).
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setActiveTab('cashiers')}
-                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition shrink-0"
-                >
+                <button onClick={() => setActiveTab('cashiers')} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition shrink-0">
                   Conferir Caixas
                 </button>
               </div>
@@ -718,29 +639,17 @@ function ConteudoEventosSemanais() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-semibold text-sm">
-                      Auditoria de Preços: {metrics.priceMismatches.length} item(ns) na aba Produção divergem do Catálogo
-                    </p>
+                    <p className="font-semibold text-sm">Auditoria de Preços: {metrics.priceMismatches.length} item(ns) na aba Produção divergem do Catálogo</p>
                     <p className="text-xs text-amber-800 mt-0.5">
-                      Ex:{' '}
-                      {metrics.priceMismatches
-                        .slice(0, 3)
-                        .map((m) => `${m.item} (${m.beneficiary}: ${formatBRL(m.prodPrice)} vs catálogo ${formatBRL(m.catalogPrice)})`)
-                        .join(' • ')}
+                      Ex: {metrics.priceMismatches.slice(0, 3).map((m) => `${m.item} (${m.beneficiary}: ${formatBRL(m.prodPrice)} vs catálogo ${formatBRL(m.catalogPrice)})`).join(' • ')}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setActiveTab('production')}
-                    className="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-medium rounded-lg transition"
-                  >
+                  <button onClick={() => setActiveTab('production')} className="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-medium rounded-lg transition">
                     Ver Itens
                   </button>
-                  <button
-                    onClick={handleFixPriceMismatches}
-                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition"
-                  >
+                  <button onClick={handleFixPriceMismatches} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-lg transition">
                     Corrigir Preços
                   </button>
                 </div>
@@ -775,18 +684,11 @@ function ConteudoEventosSemanais() {
               <span>Lucro Líquido</span>
               <TrendingUp className={`w-4 h-4 ${metrics.lucroEvento >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} />
             </div>
-            <div
-              className={`text-2xl font-bold tabular-nums ${
-                metrics.lucroEvento >= 0 ? 'text-emerald-600' : 'text-rose-600'
-              }`}
-            >
+            <div className={`text-2xl font-bold tabular-nums ${metrics.lucroEvento >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               {formatBRL(metrics.lucroEvento)}
             </div>
             <div className="text-xs text-slate-500 mt-1">
-              Margem:{' '}
-              <span className="font-medium text-slate-700">
-                {metrics.faturamento > 0 ? `${((metrics.lucroEvento / metrics.faturamento) * 100).toFixed(1)}%` : '0%'}
-              </span>
+              Margem: <span className="font-medium text-slate-700">{metrics.faturamento > 0 ? `${((metrics.lucroEvento / metrics.faturamento) * 100).toFixed(1)}%` : '0%'}</span>
             </div>
           </div>
 
@@ -800,11 +702,8 @@ function ConteudoEventosSemanais() {
                 type="number"
                 min="0"
                 value={activeEvent.publicCount}
-                onChange={(e) =>
-                  updateActiveEvent((ev) => ({ ...ev, publicCount: Math.max(0, parseInt(e.target.value, 10) || 0) }))
-                }
+                onChange={(e) => updateActiveEvent((ev) => ({ ...ev, publicCount: Math.max(0, parseInt(e.target.value, 10) || 0) }))}
                 className="w-20 text-2xl font-bold text-slate-900 tabular-nums bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                title="Clique para editar o público total"
               />
               <span className="text-xs text-slate-500">pessoas</span>
             </div>
@@ -821,13 +720,11 @@ function ConteudoEventosSemanais() {
             <div className="my-1">
               {isCashierOk ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Caixas Batendo: R$ 0,00
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Caixas Batendo: R$ 0,00
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  Divergência: {formatBRL(metrics.totalCashierDiff)}
+                  <AlertTriangle className="w-3.5 h-3.5" /> Divergência: {formatBRL(metrics.totalCashierDiff)}
                 </span>
               )}
             </div>
@@ -864,12 +761,7 @@ function ConteudoEventosSemanais() {
                     type="number"
                     step="0.01"
                     value={activeEvent.dreInputs.centralEventos}
-                    onChange={(e) =>
-                      updateActiveEvent((ev) => ({
-                        ...ev,
-                        dreInputs: { ...ev.dreInputs, centralEventos: parseFloat(e.target.value) || 0 },
-                      }))
-                    }
+                    onChange={(e) => updateActiveEvent((ev) => ({ ...ev, dreInputs: { ...ev.dreInputs, centralEventos: parseFloat(e.target.value) || 0 } }))}
                     className="w-32 text-right font-semibold tabular-nums bg-indigo-50/60 border border-indigo-200 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -879,8 +771,7 @@ function ConteudoEventosSemanais() {
                 <div>
                   <span className="text-slate-700">Custo Operacional</span>
                   <span className="block text-xs text-slate-400">
-                    Atrações ({formatBRL(metrics.totalAttractions)}) + Mão de Obra ({formatBRL(metrics.totalStaff)}) + Gerais (
-                    {formatBRL(metrics.totalGeneralCosts)})
+                    Atrações ({formatBRL(metrics.totalAttractions)}) + Mão de Obra ({formatBRL(metrics.totalStaff)}) + Gerais ({formatBRL(metrics.totalGeneralCosts)})
                   </span>
                 </div>
                 <span className="font-medium text-slate-800 tabular-nums">{formatBRL(metrics.custoOperacional)}</span>
@@ -904,12 +795,7 @@ function ConteudoEventosSemanais() {
                     type="number"
                     step="0.01"
                     value={activeEvent.dreInputs.taxaSistema}
-                    onChange={(e) =>
-                      updateActiveEvent((ev) => ({
-                        ...ev,
-                        dreInputs: { ...ev.dreInputs, taxaSistema: parseFloat(e.target.value) || 0 },
-                      }))
-                    }
+                    onChange={(e) => updateActiveEvent((ev) => ({ ...ev, dreInputs: { ...ev.dreInputs, taxaSistema: parseFloat(e.target.value) || 0 } }))}
                     className="w-32 text-right font-semibold tabular-nums bg-indigo-50/60 border border-indigo-200 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -923,12 +809,7 @@ function ConteudoEventosSemanais() {
                     type="number"
                     step="0.01"
                     value={activeEvent.dreInputs.estorno}
-                    onChange={(e) =>
-                      updateActiveEvent((ev) => ({
-                        ...ev,
-                        dreInputs: { ...ev.dreInputs, estorno: parseFloat(e.target.value) || 0 },
-                      }))
-                    }
+                    onChange={(e) => updateActiveEvent((ev) => ({ ...ev, dreInputs: { ...ev.dreInputs, estorno: parseFloat(e.target.value) || 0 } }))}
                     className="w-32 text-right font-semibold tabular-nums bg-indigo-50/60 border border-indigo-200 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -959,11 +840,7 @@ function ConteudoEventosSemanais() {
                   <span className="font-bold tracking-wide text-sm">LUCRO LÍQUIDO DO EVENTO</span>
                   <span className="block text-[11px] text-slate-300">Repasse Akatu - Comissões Promoters + Central Eventos</span>
                 </div>
-                <span
-                  className={`text-lg font-bold tabular-nums ${
-                    metrics.lucroEvento >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
+                <span className={`text-lg font-bold tabular-nums ${metrics.lucroEvento >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {formatBRL(metrics.lucroEvento)}
                 </span>
               </div>
@@ -978,30 +855,17 @@ function ConteudoEventosSemanais() {
                       type="number"
                       step="0.01"
                       value={activeEvent.dreInputs.valorRecebidoAkatu}
-                      onChange={(e) =>
-                        updateActiveEvent((ev) => ({
-                          ...ev,
-                          dreInputs: { ...ev.dreInputs, valorRecebidoAkatu: parseFloat(e.target.value) || 0 },
-                        }))
-                      }
+                      onChange={(e) => updateActiveEvent((ev) => ({ ...ev, dreInputs: { ...ev.dreInputs, valorRecebidoAkatu: parseFloat(e.target.value) || 0 } }))}
                       className="w-32 text-right font-semibold tabular-nums bg-white border border-indigo-200 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200">
                   <div>
-                    <span className="font-bold text-slate-900">
-                      {metrics.valorAReceberDevolver < 0 ? 'Valor a Devolver / Acertar' : 'Valor a Receber'}
-                    </span>
+                    <span className="font-bold text-slate-900">{metrics.valorAReceberDevolver < 0 ? 'Valor a Devolver / Acertar' : 'Valor a Receber'}</span>
                     <span className="block text-xs text-slate-500">Repasse Akatu - Valor Recebido Akatu</span>
                   </div>
-                  <span
-                    className={`text-base font-bold tabular-nums px-3 py-1 rounded-lg ${
-                      metrics.valorAReceberDevolver < 0
-                        ? 'bg-amber-100 text-amber-900'
-                        : 'bg-emerald-100 text-emerald-900'
-                    }`}
-                  >
+                  <span className={`text-base font-bold tabular-nums px-3 py-1 rounded-lg ${metrics.valorAReceberDevolver < 0 ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}>
                     {formatBRL(metrics.valorAReceberDevolver)}
                   </span>
                 </div>
@@ -1013,7 +877,6 @@ function ConteudoEventosSemanais() {
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
               <h3 className="text-base font-bold text-slate-900 mb-1">Composição de Custos</h3>
               <p className="text-xs text-slate-500 mb-4">Distribuição percentual de todas as despesas do evento</p>
-
               <div className="space-y-3.5">
                 {costBreakdown.map((item) => {
                   const pct = (item.value / totalAllCosts) * 100;
@@ -1027,10 +890,7 @@ function ConteudoEventosSemanais() {
                         </div>
                       </div>
                       <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-300 ${item.color}`}
-                          style={{ width: `${Math.min(100, Math.max(pct, 0.8))}%` }}
-                        />
+                        <div className={`h-full rounded-full transition-all duration-300 ${item.color}`} style={{ width: `${Math.min(100, Math.max(pct, 0.8))}%` }} />
                       </div>
                     </div>
                   );
@@ -1041,7 +901,6 @@ function ConteudoEventosSemanais() {
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-5">
               <h3 className="text-base font-bold text-slate-900 mb-1">Entradas por Meio de Pagamento</h3>
               <p className="text-xs text-slate-500 mb-4">Consolidado dos {activeEvent.cashiers.length} operadores de caixa</p>
-
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Débito', val: metrics.totalDebito, bg: 'bg-indigo-50 text-indigo-900 border-indigo-100' },
@@ -1072,28 +931,20 @@ function ConteudoEventosSemanais() {
     const updateCashier = (id, field, value) => {
       updateActiveEvent((ev) => ({
         ...ev,
-        cashiers: ev.cashiers.map((c) =>
-          c.id === id ? { ...c, [field]: field === 'name' ? value : parseFloat(value) || 0 } : c
-        ),
+        cashiers: ev.cashiers.map((c) => (c.id === id ? { ...c, [field]: field === 'name' ? value : parseFloat(value) || 0 } : c)),
       }));
     };
 
     const addCashier = () => {
       updateActiveEvent((ev) => ({
         ...ev,
-        cashiers: [
-          ...ev.cashiers,
-          { id: uid(), name: `Novo Operador ${ev.cashiers.length + 1}`, debito: 0, credito: 0, pix: 0, dinheiro: 0, sistema: 0 },
-        ],
+        cashiers: [...ev.cashiers, { id: uid(), name: `Novo Operador ${ev.cashiers.length + 1}`, debito: 0, credito: 0, pix: 0, dinheiro: 0, sistema: 0 }],
       }));
       showToast('Operador de caixa adicionado.');
     };
 
     const removeCashier = (id) => {
-      updateActiveEvent((ev) => ({
-        ...ev,
-        cashiers: ev.cashiers.filter((c) => c.id !== id),
-      }));
+      updateActiveEvent((ev) => ({ ...ev, cashiers: ev.cashiers.filter((c) => c.id !== id) }));
       showToast('Operador removido.');
     };
 
@@ -1102,16 +953,10 @@ function ConteudoEventosSemanais() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Conferência de Caixas</h2>
-            <p className="text-xs text-slate-500">
-              Confronte os valores físicos/maquininha com o relatório do sistema PDV operador por operador.
-            </p>
+            <p className="text-xs text-slate-500">Confronte os valores físicos/maquininha com o relatório do sistema PDV operador por operador.</p>
           </div>
-          <button
-            onClick={addCashier}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Operador de Caixa
+          <button onClick={addCashier} className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+            <Plus className="w-4 h-4" /> Adicionar Operador de Caixa
           </button>
         </div>
 
@@ -1139,53 +984,24 @@ function ConteudoEventosSemanais() {
                   return (
                     <tr key={c.id} className="hover:bg-slate-50/70 transition">
                       <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={c.name}
-                          onChange={(e) => updateCashier(c.id, 'name', e.target.value)}
-                          className="w-full bg-transparent font-medium text-slate-900 border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none"
-                        />
+                        <input type="text" value={c.name} onChange={(e) => updateCashier(c.id, 'name', e.target.value)} className="w-full bg-transparent font-medium text-slate-900 border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none" />
                       </td>
                       {['debito', 'credito', 'pix', 'dinheiro'].map((field) => (
                         <td key={field} className="px-2 py-2 text-right">
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={c[field]}
-                            onChange={(e) => updateCashier(c.id, field, e.target.value)}
-                            className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-slate-800 focus:outline-none"
-                          />
+                          <input type="number" step="0.01" value={c[field]} onChange={(e) => updateCashier(c.id, field, e.target.value)} className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-slate-800 focus:outline-none" />
                         </td>
                       ))}
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900 bg-slate-50/80">
-                        {formatBRL(conf)}
-                      </td>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900 bg-slate-50/80">{formatBRL(conf)}</td>
                       <td className="px-2 py-2 text-right">
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={c.sistema}
-                          onChange={(e) => updateCashier(c.id, 'sistema', e.target.value)}
-                          className="w-24 text-right tabular-nums font-medium bg-indigo-50/50 border border-indigo-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-indigo-950 focus:outline-none"
-                        />
+                        <input type="number" step="0.01" value={c.sistema} onChange={(e) => updateCashier(c.id, 'sistema', e.target.value)} className="w-24 text-right tabular-nums font-medium bg-indigo-50/50 border border-indigo-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-indigo-950 focus:outline-none" />
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums ${
-                            isOk
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-rose-50 text-rose-700 border border-rose-200'
-                          }`}
-                        >
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums ${isOk ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                           {formatBRL(diff)}
                         </span>
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => removeCashier(c.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                          title="Excluir operador"
-                        >
+                        <button onClick={() => removeCashier(c.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -1203,11 +1019,7 @@ function ConteudoEventosSemanais() {
                   <td className="px-3 py-3.5 text-right tabular-nums bg-slate-800">{formatBRL(metrics.totalConferido)}</td>
                   <td className="px-3 py-3.5 text-right tabular-nums">{formatBRL(metrics.totalSistema)}</td>
                   <td className="px-3 py-3.5 text-right tabular-nums">
-                    <span
-                      className={
-                        Math.abs(metrics.totalCashierDiff) < 0.01 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'
-                      }
-                    >
+                    <span className={Math.abs(metrics.totalCashierDiff) < 0.01 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>
                       {formatBRL(metrics.totalCashierDiff)}
                     </span>
                   </td>
@@ -1235,9 +1047,7 @@ function ConteudoEventosSemanais() {
     const updateItem = (id, field, value) => {
       updateActiveEvent((ev) => ({
         ...ev,
-        [listKey]: ev[listKey].map((item) =>
-          item.id === id ? { ...item, [field]: field === 'name' ? value : parseFloat(value) || 0 } : item
-        ),
+        [listKey]: ev[listKey].map((item) => (item.id === id ? { ...item, [field]: field === 'name' ? value : parseFloat(value) || 0 } : item)),
       }));
     };
 
@@ -1250,10 +1060,7 @@ function ConteudoEventosSemanais() {
     };
 
     const removeItem = (id) => {
-      updateActiveEvent((ev) => ({
-        ...ev,
-        [listKey]: ev[listKey].filter((item) => item.id !== id),
-      }));
+      updateActiveEvent((ev) => ({ ...ev, [listKey]: ev[listKey].filter((item) => item.id !== id) }));
     };
 
     const categoryTotal = isBev ? metrics.totalBebidas : metrics.totalAlimentacao;
@@ -1262,32 +1069,15 @@ function ConteudoEventosSemanais() {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="inline-flex bg-white border border-slate-200 p-1 rounded-xl shadow-sm self-start">
-            <button
-              onClick={() => setCatalogSubTab('beverages')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                isBev ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <Wine className="w-4 h-4" />
-              Bebidas ({formatBRL(metrics.totalBebidas)})
+            <button onClick={() => setCatalogSubTab('beverages')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${isBev ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <Wine className="w-4 h-4" /> Bebidas ({formatBRL(metrics.totalBebidas)})
             </button>
-            <button
-              onClick={() => setCatalogSubTab('foods')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
-                !isBev ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <Utensils className="w-4 h-4" />
-              Alimentação ({formatBRL(metrics.totalAlimentacao)})
+            <button onClick={() => setCatalogSubTab('foods')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${!isBev ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
+              <Utensils className="w-4 h-4" /> Alimentação ({formatBRL(metrics.totalAlimentacao)})
             </button>
           </div>
-
-          <button
-            onClick={addItem}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Produto
+          <button onClick={addItem} className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+            <Plus className="w-4 h-4" /> Novo Produto
           </button>
         </div>
 
@@ -1302,14 +1092,8 @@ function ConteudoEventosSemanais() {
               className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-
           <label className="inline-flex items-center gap-2 text-sm text-slate-700 cursor-pointer select-none px-2">
-            <input
-              type="checkbox"
-              checked={onlyConsumed}
-              onChange={(e) => setOnlyConsumed(e.target.checked)}
-              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-            />
+            <input type="checkbox" checked={onlyConsumed} onChange={(e) => setOnlyConsumed(e.target.checked)} className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300" />
             Mostrar apenas itens com consumo &gt; 0
           </label>
         </div>
@@ -1332,40 +1116,17 @@ function ConteudoEventosSemanais() {
                   return (
                     <tr key={item.id} className={`hover:bg-slate-50 transition ${item.qty === 0 ? 'opacity-65' : ''}`}>
                       <td className="px-4 py-2">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                          className="w-full bg-transparent font-medium text-slate-900 border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none"
-                        />
+                        <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-transparent font-medium text-slate-900 border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none" />
                       </td>
                       <td className="px-4 py-2 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={item.qty}
-                          onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
-                          className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 font-semibold text-slate-900 focus:outline-none"
-                        />
+                        <input type="number" min="0" step="1" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 font-semibold text-slate-900 focus:outline-none" />
                       </td>
                       <td className="px-4 py-2 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)}
-                          className="w-28 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-slate-700 focus:outline-none"
-                        />
+                        <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)} className="w-28 text-right tabular-nums bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded px-2 py-1 text-slate-700 focus:outline-none" />
                       </td>
                       <td className="px-4 py-2 text-right font-semibold tabular-nums text-slate-900">{formatBRL(rowTotal)}</td>
                       <td className="px-3 py-2 text-center">
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                          title="Excluir produto"
-                        >
+                        <button onClick={() => removeItem(item.id)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -1374,20 +1135,14 @@ function ConteudoEventosSemanais() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                      Nenhum produto encontrado com os filtros atuais.
-                    </td>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400">Nenhum produto encontrado com os filtros atuais.</td>
                   </tr>
                 )}
               </tbody>
               <tfoot className="bg-slate-900 text-white font-semibold">
                 <tr>
-                  <td className="px-4 py-3 text-xs uppercase tracking-wider">
-                    Total {isBev ? 'Bebidas' : 'Alimentação'} ({items.length} itens no catálogo)
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-xs">
-                    {items.reduce((acc, i) => acc + (Number(i.qty) || 0), 0)} unid.
-                  </td>
+                  <td className="px-4 py-3 text-xs uppercase tracking-wider">Total {isBev ? 'Bebidas' : 'Alimentação'} ({items.length} itens no catálogo)</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-xs">{items.reduce((acc, i) => acc + (Number(i.qty) || 0), 0)} unid.</td>
                   <td />
                   <td className="px-4 py-3 text-right tabular-nums">{formatBRL(categoryTotal)}</td>
                   <td />
@@ -1408,24 +1163,16 @@ function ConteudoEventosSemanais() {
       const updateRow = (id, field, value) => {
         updateActiveEvent((ev) => ({
           ...ev,
-          [listKey]: ev[listKey].map((item) =>
-            item.id === id ? { ...item, [field]: field === 'name' ? value : parseFloat(value) || 0 } : item
-          ),
+          [listKey]: ev[listKey].map((item) => (item.id === id ? { ...item, [field]: field === 'name' ? value : parseFloat(value) || 0 } : item)),
         }));
       };
 
       const addRow = () => {
-        updateActiveEvent((ev) => ({
-          ...ev,
-          [listKey]: [...ev[listKey], { id: uid(), name: 'Novo Item', qty: 1, unitPrice: 0 }],
-        }));
+        updateActiveEvent((ev) => ({ ...ev, [listKey]: [...ev[listKey], { id: uid(), name: 'Novo Item', qty: 1, unitPrice: 0 }] }));
       };
 
       const removeRow = (id) => {
-        updateActiveEvent((ev) => ({
-          ...ev,
-          [listKey]: ev[listKey].filter((item) => item.id !== id),
-        }));
+        updateActiveEvent((ev) => ({ ...ev, [listKey]: ev[listKey].filter((item) => item.id !== id) }));
       };
 
       return (
@@ -1442,12 +1189,8 @@ function ConteudoEventosSemanais() {
             </div>
             <div className="flex items-center gap-3">
               <span className="font-bold text-slate-900 tabular-nums text-sm">{formatBRL(totalValue)}</span>
-              <button
-                onClick={addRow}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Adicionar
+              <button onClick={addRow} className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition">
+                <Plus className="w-3.5 h-3.5" /> Adicionar
               </button>
             </div>
           </div>
@@ -1469,41 +1212,17 @@ function ConteudoEventosSemanais() {
                   return (
                     <tr key={item.id} className="hover:bg-slate-50/70">
                       <td className="px-3 py-1.5">
-                        <input
-                          type="text"
-                          value={item.name}
-                          onChange={(e) => updateRow(item.id, 'name', e.target.value)}
-                          className="w-full bg-transparent text-slate-800 font-medium border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none"
-                        />
+                        <input type="text" value={item.name} onChange={(e) => updateRow(item.id, 'name', e.target.value)} className="w-full bg-transparent text-slate-800 font-medium border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none" />
                       </td>
                       <td className="px-2 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          value={item.qty}
-                          onChange={(e) => updateRow(item.id, 'qty', e.target.value)}
-                          className="w-16 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500"
-                        />
+                        <input type="number" min="0" value={item.qty} onChange={(e) => updateRow(item.id, 'qty', e.target.value)} className="w-16 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500" />
                       </td>
                       <td className="px-2 py-1.5 text-right">
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateRow(item.id, 'unitPrice', e.target.value)}
-                          className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500"
-                        />
+                        <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(e) => updateRow(item.id, 'unitPrice', e.target.value)} className="w-24 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500" />
                       </td>
-                      <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-900">
-                        {formatBRL(rowTotal)}
-                      </td>
+                      <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-900">{formatBRL(rowTotal)}</td>
                       <td className="px-2 py-1.5 text-center">
-                        <button
-                          onClick={() => removeRow(item.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
-                          title="Excluir"
-                        >
+                        <button onClick={() => removeRow(item.id)} className="p-1 text-slate-400 hover:text-rose-600 rounded transition">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </td>
@@ -1539,33 +1258,11 @@ function ConteudoEventosSemanais() {
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {renderCostBlock(
-            'Mão de Obra / Freelancers',
-            'Diárias de bar, cozinha, caixas, segurança e limpeza',
-            Users,
-            'staff',
-            metrics.totalStaff,
-            'bg-violet-100 text-violet-700'
-          )}
+          {renderCostBlock('Mão de Obra / Freelancers', 'Diárias de bar, cozinha, caixas, segurança e limpeza', Users, 'staff', metrics.totalStaff, 'bg-violet-100 text-violet-700')}
 
           <div className="space-y-6">
-            {renderCostBlock(
-              'Custos Gerais / Estrutura',
-              'Aluguel de espaço, gelo, tráfego pago e insumos',
-              Building2,
-              'generalCosts',
-              metrics.totalGeneralCosts,
-              'bg-sky-100 text-sky-700'
-            )}
-
-            {renderCostBlock(
-              'Atrações & Sonorização',
-              'Cachês de DJs, bandas e equipamento de som',
-              Music,
-              'attractions',
-              metrics.totalAttractions,
-              'bg-amber-100 text-amber-700'
-            )}
+            {renderCostBlock('Custos Gerais / Estrutura', 'Aluguel de espaço, gelo, tráfego pago e insumos', Building2, 'generalCosts', metrics.totalGeneralCosts, 'bg-sky-100 text-sky-700')}
+            {renderCostBlock('Atrações & Sonorização', 'Cachês de DJs, bandas e equipamento de som', Music, 'attractions', metrics.totalAttractions, 'bg-amber-100 text-amber-700')}
 
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 bg-slate-50/70">
@@ -1575,24 +1272,16 @@ function ConteudoEventosSemanais() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm">Comissões Promoters (Custos Extra S4)</h3>
-                    <p className="text-xs text-slate-500">
-                      Base de cálculo: {formatBRL(metrics.baseComissao)} (Faturamento + Central Eventos)
-                    </p>
+                    <p className="text-xs text-slate-500">Base de cálculo: {formatBRL(metrics.baseComissao)} (Faturamento + Central Eventos)</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-900 tabular-nums text-sm">{formatBRL(metrics.totalPromoters)}</span>
                   <button
-                    onClick={() =>
-                      updateActiveEvent((ev) => ({
-                        ...ev,
-                        promoters: [...ev.promoters, { id: uid(), name: 'Novo Promoter', percent: 0.5 }],
-                      }))
-                    }
+                    onClick={() => updateActiveEvent((ev) => ({ ...ev, promoters: [...ev.promoters, { id: uid(), name: 'Novo Promoter', percent: 0.5 }] }))}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    Adicionar
+                    <Plus className="w-3.5 h-3.5" /> Adicionar
                   </button>
                 </div>
               </div>
@@ -1612,49 +1301,17 @@ function ConteudoEventosSemanais() {
                     return (
                       <tr key={p.id} className="hover:bg-slate-50/70">
                         <td className="px-3 py-1.5">
-                          <input
-                            type="text"
-                            value={p.name}
-                            onChange={(e) =>
-                              updateActiveEvent((ev) => ({
-                                ...ev,
-                                promoters: ev.promoters.map((x) => (x.id === p.id ? { ...x, name: e.target.value } : x)),
-                              }))
-                            }
-                            className="w-full bg-transparent text-slate-800 font-medium border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none"
-                          />
+                          <input type="text" value={p.name} onChange={(e) => updateActiveEvent((ev) => ({ ...ev, promoters: ev.promoters.map((x) => (x.id === p.id ? { ...x, name: e.target.value } : x)) }))} className="w-full bg-transparent text-slate-800 font-medium border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-2 py-1 focus:outline-none" />
                         </td>
                         <td className="px-3 py-1.5 text-right">
                           <div className="inline-flex items-center gap-1">
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="0"
-                              value={p.percent}
-                              onChange={(e) =>
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  promoters: ev.promoters.map((x) =>
-                                    x.id === p.id ? { ...x, percent: parseFloat(e.target.value) || 0 } : x
-                                  ),
-                                }))
-                              }
-                              className="w-16 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500"
-                            />
+                            <input type="number" step="0.1" min="0" value={p.percent} onChange={(e) => updateActiveEvent((ev) => ({ ...ev, promoters: ev.promoters.map((x) => (x.id === p.id ? { ...x, percent: parseFloat(e.target.value) || 0 } : x)) }))} className="w-16 text-right tabular-nums bg-slate-50 border border-slate-200 rounded px-1.5 py-1 focus:outline-none focus:border-indigo-500" />
                             <span className="text-slate-400 text-xs">%</span>
                           </div>
                         </td>
                         <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-900">{formatBRL(val)}</td>
                         <td className="px-2 py-1.5 text-center">
-                          <button
-                            onClick={() =>
-                              updateActiveEvent((ev) => ({
-                                ...ev,
-                                promoters: ev.promoters.filter((x) => x.id !== p.id),
-                              }))
-                            }
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
-                          >
+                          <button onClick={() => updateActiveEvent((ev) => ({ ...ev, promoters: ev.promoters.filter((x) => x.id !== p.id) }))} className="p-1 text-slate-400 hover:text-rose-600 rounded transition">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </td>
@@ -1679,63 +1336,27 @@ function ConteudoEventosSemanais() {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="inline-flex bg-white border border-slate-200 p-1 rounded-xl shadow-sm self-start">
-            <button
-              onClick={() => setProdSubTab('production')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                isProd ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
+            <button onClick={() => setProdSubTab('production')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isProd ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
               Produção & Aniversários ({formatBRL(metrics.totalProducao)})
             </button>
-            <button
-              onClick={() => setProdSubTab('half')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                !isProd ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
+            <button onClick={() => setProdSubTab('half')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${!isProd ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}>
               Consumo 50% — Auditoria ({formatBRL(metrics.totalConsumo50)})
             </button>
           </div>
 
           {isProd ? (
             <button
-              onClick={() =>
-                updateActiveEvent((ev) => ({
-                  ...ev,
-                  production: [
-                    { id: uid(), beneficiary: 'DJ', item: 'Água', qty: 1, unitPrice: 0.99 },
-                    ...ev.production,
-                  ],
-                }))
-              }
+              onClick={() => updateActiveEvent((ev) => ({ ...ev, production: [{ id: uid(), beneficiary: 'DJ', item: 'Água', qty: 1, unitPrice: 0.99 }, ...ev.production] }))}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
             >
-              <Plus className="w-4 h-4" />
-              Lançar Item de Produção
+              <Plus className="w-4 h-4" /> Lançar Item de Produção
             </button>
           ) : (
             <button
-              onClick={() =>
-                updateActiveEvent((ev) => ({
-                  ...ev,
-                  halfPriceConsumption: [
-                    {
-                      id: uid(),
-                      person: 'Novo Beneficiário',
-                      item: 'Produto',
-                      paymentMethod: 'Débito',
-                      qty: 1,
-                      unitPrice: 0,
-                      authorizedBy: 'Produção',
-                    },
-                    ...ev.halfPriceConsumption,
-                  ],
-                }))
-              }
+              onClick={() => updateActiveEvent((ev) => ({ ...ev, halfPriceConsumption: [{ id: uid(), person: 'Novo Beneficiário', item: 'Produto', paymentMethod: 'Débito', qty: 1, unitPrice: 0, authorizedBy: 'Produção' }, ...ev.halfPriceConsumption] }))}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition"
             >
-              <Plus className="w-4 h-4" />
-              Lançar Consumo 50%
+              <Plus className="w-4 h-4" /> Lançar Consumo 50%
             </button>
           )}
         </div>
@@ -1746,15 +1367,9 @@ function ConteudoEventosSemanais() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>
-                    <strong>{metrics.priceMismatches.length} item(ns)</strong> estão com preço unitário diferente do catálogo de
-                    Bebidas/Alimentação (destacados em âmbar abaixo).
-                  </span>
+                  <span><strong>{metrics.priceMismatches.length} item(ns)</strong> estão com preço unitário diferente do catálogo de Bebidas/Alimentação.</span>
                 </div>
-                <button
-                  onClick={handleFixPriceMismatches}
-                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition shrink-0"
-                >
+                <button onClick={handleFixPriceMismatches} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition shrink-0">
                   Sincronizar com Catálogo
                 </button>
               </div>
@@ -1780,19 +1395,7 @@ function ConteudoEventosSemanais() {
                       return (
                         <tr key={row.id} className={catalogExpected !== undefined ? 'bg-amber-50/50' : 'hover:bg-slate-50'}>
                           <td className="px-3 py-2">
-                            <input
-                              list="beneficiary-list"
-                              value={row.beneficiary}
-                              onChange={(e) =>
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  production: ev.production.map((p) =>
-                                    p.id === row.id ? { ...p, beneficiary: e.target.value } : p
-                                  ),
-                                }))
-                              }
-                              className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 font-medium focus:outline-none focus:border-indigo-500"
-                            />
+                            <input list="beneficiary-list" value={row.beneficiary} onChange={(e) => updateActiveEvent((ev) => ({ ...ev, production: ev.production.map((p) => (p.id === row.id ? { ...p, beneficiary: e.target.value } : p)) }))} className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 font-medium focus:outline-none focus:border-indigo-500" />
                           </td>
                           <td className="px-3 py-2">
                             <input
@@ -1800,36 +1403,14 @@ function ConteudoEventosSemanais() {
                               value={row.item}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                const match = [...activeEvent.beverages, ...activeEvent.foods].find(
-                                  (c) => normalizeText(c.name) === normalizeText(val)
-                                );
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  production: ev.production.map((p) =>
-                                    p.id === row.id
-                                      ? { ...p, item: val, unitPrice: match ? match.unitPrice : p.unitPrice }
-                                      : p
-                                  ),
-                                }));
+                                const match = [...activeEvent.beverages, ...activeEvent.foods].find((c) => normalizeText(c.name) === normalizeText(val));
+                                updateActiveEvent((ev) => ({ ...ev, production: ev.production.map((p) => (p.id === row.id ? { ...p, item: val, unitPrice: match ? match.unitPrice : p.unitPrice } : p)) }));
                               }}
                               className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 focus:outline-none focus:border-indigo-500"
                             />
                           </td>
                           <td className="px-3 py-2 text-right">
-                            <input
-                              type="number"
-                              min="0"
-                              value={row.qty}
-                              onChange={(e) =>
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  production: ev.production.map((p) =>
-                                    p.id === row.id ? { ...p, qty: parseFloat(e.target.value) || 0 } : p
-                                  ),
-                                }))
-                              }
-                              className="w-20 text-right tabular-nums bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-500"
-                            />
+                            <input type="number" min="0" value={row.qty} onChange={(e) => updateActiveEvent((ev) => ({ ...ev, production: ev.production.map((p) => (p.id === row.id ? { ...p, qty: parseFloat(e.target.value) || 0 } : p)) }))} className="w-20 text-right tabular-nums bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-500" />
                           </td>
                           <td className="px-3 py-2 text-right">
                             <input
@@ -1837,37 +1418,14 @@ function ConteudoEventosSemanais() {
                               step="0.01"
                               min="0"
                               value={row.unitPrice}
-                              onChange={(e) =>
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  production: ev.production.map((p) =>
-                                    p.id === row.id ? { ...p, unitPrice: parseFloat(e.target.value) || 0 } : p
-                                  ),
-                                }))
-                              }
-                              className={`w-24 text-right tabular-nums border rounded px-2 py-1 focus:outline-none ${
-                                catalogExpected !== undefined
-                                  ? 'bg-amber-100 border-amber-400 text-amber-950 font-semibold'
-                                  : 'bg-white border-slate-200'
-                              }`}
+                              onChange={(e) => updateActiveEvent((ev) => ({ ...ev, production: ev.production.map((p) => (p.id === row.id ? { ...p, unitPrice: parseFloat(e.target.value) || 0 } : p)) }))}
+                              className={`w-24 text-right tabular-nums border rounded px-2 py-1 focus:outline-none ${catalogExpected !== undefined ? 'bg-amber-100 border-amber-400 text-amber-950 font-semibold' : 'bg-white border-slate-200'}`}
                             />
-                            {catalogExpected !== undefined && (
-                              <div className="text-[10px] text-amber-700 mt-0.5">Catálogo: {formatBRL(catalogExpected)}</div>
-                            )}
+                            {catalogExpected !== undefined && <div className="text-[10px] text-amber-700 mt-0.5">Catálogo: {formatBRL(catalogExpected)}</div>}
                           </td>
-                          <td className="px-4 py-2 text-right font-semibold tabular-nums text-slate-900">
-                            {formatBRL(rowTotal)}
-                          </td>
+                          <td className="px-4 py-2 text-right font-semibold tabular-nums text-slate-900">{formatBRL(rowTotal)}</td>
                           <td className="px-3 py-2 text-center">
-                            <button
-                              onClick={() =>
-                                updateActiveEvent((ev) => ({
-                                  ...ev,
-                                  production: ev.production.filter((p) => p.id !== row.id),
-                                }))
-                              }
-                              className="p-1.5 text-slate-400 hover:text-rose-600 rounded transition"
-                            >
+                            <button onClick={() => updateActiveEvent((ev) => ({ ...ev, production: ev.production.filter((p) => p.id !== row.id) }))} className="p-1.5 text-slate-400 hover:text-rose-600 rounded transition">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
@@ -1877,35 +1435,22 @@ function ConteudoEventosSemanais() {
                   </tbody>
                   <tfoot className="bg-slate-900 text-white font-semibold">
                     <tr>
-                      <td colSpan={4} className="px-4 py-3 text-xs uppercase tracking-wider">
-                        Total Produção & Aniversários (entra no Custo Total do DRE)
-                      </td>
+                      <td colSpan={4} className="px-4 py-3 text-xs uppercase tracking-wider">Total Produção & Aniversários (entra no Custo Total do DRE)</td>
                       <td className="px-4 py-3 text-right tabular-nums">{formatBRL(metrics.totalProducao)}</td>
                       <td />
                     </tr>
                   </tfoot>
                 </table>
               </div>
-              <datalist id="beneficiary-list">
-                {beneficiaryOptions.map((opt) => (
-                  <option key={opt} value={opt} />
-                ))}
-              </datalist>
-              <datalist id="catalog-products-list">
-                {[...activeEvent.beverages, ...activeEvent.foods].map((c) => (
-                  <option key={c.id} value={c.name} />
-                ))}
-              </datalist>
+              <datalist id="beneficiary-list">{beneficiaryOptions.map((opt) => <option key={opt} value={opt} />)}</datalist>
+              <datalist id="catalog-products-list">{[...activeEvent.beverages, ...activeEvent.foods].map((c) => <option key={c.id} value={c.name} />)}</datalist>
             </div>
           </div>
         ) : (
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-3 bg-indigo-50/50 border-b border-slate-200 text-xs text-indigo-900 flex items-center gap-2">
               <Info className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span>
-                Controle de auditoria de consumo com 50% de desconto. Este bloco não altera o Custo Total do DRE, mas garante
-                rastreabilidade de quem autorizou cada lançamento.
-              </span>
+              <span>Controle de auditoria de consumo com 50% de desconto. Este bloco não altera o Custo Total do DRE.</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -1925,83 +1470,26 @@ function ConteudoEventosSemanais() {
                   {activeEvent.halfPriceConsumption.map((h) => {
                     const rowTotal = round2((Number(h.qty) || 0) * (Number(h.unitPrice) || 0));
                     const updateHalf = (field, val) => {
-                      updateActiveEvent((ev) => ({
-                        ...ev,
-                        halfPriceConsumption: ev.halfPriceConsumption.map((item) =>
-                          item.id === h.id ? { ...item, [field]: val } : item
-                        ),
-                      }));
+                      updateActiveEvent((ev) => ({ ...ev, halfPriceConsumption: ev.halfPriceConsumption.map((item) => (item.id === h.id ? { ...item, [field]: val } : item)) }));
                     };
                     return (
                       <tr key={h.id} className="hover:bg-slate-50">
+                        <td className="px-3 py-2"><input type="text" value={h.person} onChange={(e) => updateHalf('person', e.target.value)} className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-medium text-slate-800 focus:outline-none focus:border-indigo-500" /></td>
+                        <td className="px-3 py-2"><input type="text" value={h.item} onChange={(e) => updateHalf('item', e.target.value)} className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 focus:outline-none focus:border-indigo-500" /></td>
                         <td className="px-3 py-2">
-                          <input
-                            type="text"
-                            value={h.person}
-                            onChange={(e) => updateHalf('person', e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 font-medium text-slate-800 focus:outline-none focus:border-indigo-500"
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="text"
-                            value={h.item}
-                            onChange={(e) => updateHalf('item', e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-800 focus:outline-none focus:border-indigo-500"
-                          />
-                        </td>
-                        <td className="px-3 py-2">
-                          <select
-                            value={h.paymentMethod}
-                            onChange={(e) => updateHalf('paymentMethod', e.target.value)}
-                            className="bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:border-indigo-500"
-                          >
+                          <select value={h.paymentMethod} onChange={(e) => updateHalf('paymentMethod', e.target.value)} className="bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:border-indigo-500">
                             <option value="Débito">Débito</option>
                             <option value="Crédito">Crédito</option>
                             <option value="Pix">Pix</option>
                             <option value="Dinheiro">Dinheiro</option>
                           </select>
                         </td>
-                        <td className="px-3 py-2 text-right">
-                          <input
-                            type="number"
-                            min="0"
-                            value={h.qty}
-                            onChange={(e) => updateHalf('qty', parseFloat(e.target.value) || 0)}
-                            className="w-16 text-right tabular-nums bg-white border border-slate-200 rounded px-1.5 py-1"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={h.unitPrice}
-                            onChange={(e) => updateHalf('unitPrice', parseFloat(e.target.value) || 0)}
-                            className="w-24 text-right tabular-nums bg-white border border-slate-200 rounded px-1.5 py-1"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900">
-                          {formatBRL(rowTotal)}
-                        </td>
-                        <td className="px-3 py-2">
-                          <input
-                            type="text"
-                            value={h.authorizedBy}
-                            onChange={(e) => updateHalf('authorizedBy', e.target.value)}
-                            className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:border-indigo-500"
-                          />
-                        </td>
+                        <td className="px-3 py-2 text-right"><input type="number" min="0" value={h.qty} onChange={(e) => updateHalf('qty', parseFloat(e.target.value) || 0)} className="w-16 text-right tabular-nums bg-white border border-slate-200 rounded px-1.5 py-1" /></td>
+                        <td className="px-3 py-2 text-right"><input type="number" step="0.01" min="0" value={h.unitPrice} onChange={(e) => updateHalf('unitPrice', parseFloat(e.target.value) || 0)} className="w-24 text-right tabular-nums bg-white border border-slate-200 rounded px-1.5 py-1" /></td>
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900">{formatBRL(rowTotal)}</td>
+                        <td className="px-3 py-2"><input type="text" value={h.authorizedBy} onChange={(e) => updateHalf('authorizedBy', e.target.value)} className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-slate-700 focus:outline-none focus:border-indigo-500" /></td>
                         <td className="px-2 py-2 text-center">
-                          <button
-                            onClick={() =>
-                              updateActiveEvent((ev) => ({
-                                ...ev,
-                                halfPriceConsumption: ev.halfPriceConsumption.filter((item) => item.id !== h.id),
-                              }))
-                            }
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded transition"
-                          >
+                          <button onClick={() => updateActiveEvent((ev) => ({ ...ev, halfPriceConsumption: ev.halfPriceConsumption.filter((item) => item.id !== h.id) }))} className="p-1 text-slate-400 hover:text-rose-600 rounded transition">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -2011,9 +1499,7 @@ function ConteudoEventosSemanais() {
                 </tbody>
                 <tfoot className="bg-slate-900 text-white font-semibold">
                   <tr>
-                    <td colSpan={5} className="px-4 py-3 text-xs uppercase tracking-wider">
-                      Total Consumo 50% (Auditoria)
-                    </td>
+                    <td colSpan={5} className="px-4 py-3 text-xs uppercase tracking-wider">Total Consumo 50% (Auditoria)</td>
                     <td className="px-3 py-3 text-right tabular-nums">{formatBRL(metrics.totalConsumo50)}</td>
                     <td colSpan={2} />
                   </tr>
@@ -2028,10 +1514,7 @@ function ConteudoEventosSemanais() {
 
   const renderAuditModule = () => {
     const toggleCheck = (id) => {
-      updateActiveEvent((ev) => ({
-        ...ev,
-        checklist: ev.checklist.map((c) => (c.id === id ? { ...c, done: !c.done } : c)),
-      }));
+      updateActiveEvent((ev) => ({ ...ev, checklist: ev.checklist.map((c) => (c.id === id ? { ...c, done: !c.done } : c)) }));
     };
 
     const toggleEventStatus = () => {
@@ -2052,30 +1535,13 @@ function ConteudoEventosSemanais() {
           </div>
 
           <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                metrics.checklistPct === 100 ? 'bg-emerald-500' : 'bg-indigo-600'
-              }`}
-              style={{ width: `${metrics.checklistPct}%` }}
-            />
+            <div className={`h-full rounded-full transition-all duration-300 ${metrics.checklistPct === 100 ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${metrics.checklistPct}%` }} />
           </div>
 
           <div className="space-y-2.5">
             {activeEvent.checklist.map((item) => (
-              <label
-                key={item.id}
-                className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
-                  item.done
-                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
-                    : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100/70'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={item.done}
-                  onChange={() => toggleCheck(item.id)}
-                  className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300"
-                />
+              <label key={item.id} className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${item.done ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950' : 'bg-slate-50/70 border-slate-200 text-slate-700 hover:bg-slate-100/70'}`}>
+                <input type="checkbox" checked={item.done} onChange={() => toggleCheck(item.id)} className="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300" />
                 <span className={`text-sm ${item.done ? 'line-through opacity-80' : 'font-medium'}`}>{item.label}</span>
               </label>
             ))}
@@ -2084,24 +1550,11 @@ function ConteudoEventosSemanais() {
           <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-slate-500">
               Status atual:{' '}
-              <span
-                className={`font-semibold px-2 py-0.5 rounded-full ${
-                  activeEvent.status === 'Fechado e Aprovado'
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
+              <span className={`font-semibold px-2 py-0.5 rounded-full ${activeEvent.status === 'Fechado e Aprovado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                 {activeEvent.status}
               </span>
             </div>
-            <button
-              onClick={toggleEventStatus}
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm ${
-                activeEvent.status === 'Fechado e Aprovado'
-                  ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-              }`}
-            >
+            <button onClick={toggleEventStatus} className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition shadow-sm ${activeEvent.status === 'Fechado e Aprovado' ? 'bg-slate-200 hover:bg-slate-300 text-slate-800' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
               <CheckCircle2 className="w-4 h-4" />
               {activeEvent.status === 'Fechado e Aprovado' ? 'Reabrir para Conferência' : 'Marcar como Fechado e Aprovado'}
             </button>
@@ -2111,40 +1564,21 @@ function ConteudoEventosSemanais() {
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-4">
             <h3 className="text-base font-bold text-slate-900">Exportar & Compartilhar Fechamento</h3>
-            <p className="text-xs text-slate-500">
-              Gere relatórios prontos para enviar aos sócios, financeiro ou arquivar no histórico semanal.
-            </p>
-
-            <button
-              onClick={handleExportCSV}
-              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition text-left group"
-            >
+            <button onClick={handleExportCSV} className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition text-left group">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700">
-                  <FileSpreadsheet className="w-5 h-5" />
-                </div>
+                <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-700"><FileSpreadsheet className="w-5 h-5" /></div>
                 <div>
-                  <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-700">
-                    Exportar Fechamento em CSV
-                  </div>
+                  <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-700">Exportar Fechamento em CSV</div>
                   <div className="text-xs text-slate-500">Abre direto no Excel com DRE e todos os detalhamentos</div>
                 </div>
               </div>
               <Download className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
             </button>
-
-            <button
-              onClick={() => window.print()}
-              className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition text-left group"
-            >
+            <button onClick={() => window.print()} className="w-full flex items-center justify-between p-4 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 transition text-left group">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-700">
-                  <Printer className="w-5 h-5" />
-                </div>
+                <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-700"><Printer className="w-5 h-5" /></div>
                 <div>
-                  <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-700">
-                    Imprimir / Salvar PDF
-                  </div>
+                  <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-700">Imprimir / Salvar PDF</div>
                   <div className="text-xs text-slate-500">Layout executivo limpo para envio via WhatsApp/E-mail</div>
                 </div>
               </div>
@@ -2154,23 +1588,12 @@ function ConteudoEventosSemanais() {
 
           <div className="bg-slate-900 text-white rounded-xl p-5 space-y-2">
             <div className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Resumo Executivo Rápido</div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Faturamento</span>
-              <span className="font-bold tabular-nums">{formatBRL(metrics.faturamento)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Custo Total</span>
-              <span className="font-bold tabular-nums">{formatBRL(metrics.custoTotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-300">Comissões Promoters</span>
-              <span className="font-bold tabular-nums">{formatBRL(metrics.totalPromoters)}</span>
-            </div>
+            <div className="flex justify-between text-sm"><span className="text-slate-300">Faturamento</span><span className="font-bold tabular-nums">{formatBRL(metrics.faturamento)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-300">Custo Total</span><span className="font-bold tabular-nums">{formatBRL(metrics.custoTotal)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-300">Comissões Promoters</span><span className="font-bold tabular-nums">{formatBRL(metrics.totalPromoters)}</span></div>
             <div className="flex justify-between text-base pt-2 border-t border-slate-700">
               <span className="font-bold">Lucro Líquido</span>
-              <span className={`font-bold tabular-nums ${metrics.lucroEvento >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {formatBRL(metrics.lucroEvento)}
-              </span>
+              <span className={`font-bold tabular-nums ${metrics.lucroEvento >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>{formatBRL(metrics.lucroEvento)}</span>
             </div>
           </div>
         </div>
@@ -2188,71 +1611,33 @@ function ConteudoEventosSemanais() {
         }
       `}</style>
 
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+      {mobileMenuOpen && <div className="fixed inset-0 bg-slate-950/60 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />}
 
-      <aside
-        className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-slate-900 text-slate-100 flex flex-col shrink-0 transition-transform duration-200 ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
-      >
+      <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-slate-900 text-slate-100 flex flex-col shrink-0 transition-transform duration-200 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-600/30">
-              FE
-            </div>
+            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-600/30">FE</div>
             <div>
               <div className="font-bold text-base tracking-tight leading-none">Eventos Semanais</div>
               <div className="text-[11px] text-slate-400 mt-1">MEU EVENTO • Fechamento</div>
             </div>
           </div>
-          <button
-            onClick={() => setMobileMenuOpen(false)}
-            className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <button onClick={() => setMobileMenuOpen(false)} className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="px-4 pt-3">
-          <a
-            href="/"
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Voltar ao MEU EVENTO
+          <a href="/" className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg transition">
+            <ArrowLeft className="w-3.5 h-3.5" /> Voltar ao MEU EVENTO
           </a>
         </div>
 
         <div className="p-4 border-b border-slate-800 space-y-2.5">
-          <label className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">
-            Edição Semanal Ativa
-          </label>
-          <select
-            value={activeEvent.id}
-            onChange={(e) => setActiveEventId(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 text-sm font-medium text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {events.map((ev) => (
-              <option key={ev.id} value={ev.id}>
-                {ev.name}
-              </option>
-            ))}
+          <label className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">Edição Semanal Ativa</label>
+          <select value={activeEvent.id} onChange={(e) => setActiveEventId(e.target.value)} className="w-full bg-slate-800 border border-slate-700 text-sm font-medium text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
           </select>
-
-          <button
-            onClick={() => {
-              setNewEventForm((f) => ({ ...f, venue: activeEvent.venue }));
-              setNewEventModalOpen(true);
-            }}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Fechamento Semanal
+          <button onClick={() => { setNewEventForm((f) => ({ ...f, venue: activeEvent.venue })); setNewEventModalOpen(true); }} className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-sm">
+            <Plus className="w-4 h-4" /> Novo Fechamento Semanal
           </button>
         </div>
 
@@ -2261,39 +1646,20 @@ function ConteudoEventosSemanais() {
             const Icon = item.icon;
             const active = activeTab === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                  active
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
+              <button key={item.id} onClick={() => { setActiveTab(item.id); setMobileMenuOpen(false); }} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition ${active ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
                 <div className="flex items-center gap-3 truncate">
                   <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-white' : 'text-slate-400'}`} />
                   <span className="truncate">{item.label}</span>
                 </div>
-                {item.badge && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-slate-950">
-                    {item.badge}
-                  </span>
-                )}
+                {item.badge && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-slate-950">{item.badge}</span>}
               </button>
             );
           })}
         </nav>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
-          <button
-            onClick={() => setResetModalOpen(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Restaurar Demo (20/11/2026)
+          <button onClick={() => setResetModalOpen(true)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">
+            <RotateCcw className="w-3.5 h-3.5" /> Restaurar Demo (20/11/2026)
           </button>
           <div className="text-[11px] text-center text-slate-500">Salvamento automático ativo</div>
         </div>
@@ -2302,53 +1668,27 @@ function ConteudoEventosSemanais() {
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-              aria-label="Abrir menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+            <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"><Menu className="w-5 h-5" /></button>
             <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">{activeEvent.name}</h1>
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    activeEvent.status === 'Fechado e Aprovado'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
+                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeEvent.status === 'Fechado e Aprovado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
                   {activeEvent.status}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {activeEvent.date.split('-').reverse().join('/')}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {activeEvent.venue}
-                </span>
+                <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {activeEvent.date.split('-').reverse().join('/')}</span>
+                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}</span>
               </div>
             </div>
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition"
-            >
-              <Download className="w-3.5 h-3.5" />
-              CSV
+            <button onClick={handleExportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition">
+              <Download className="w-3.5 h-3.5" /> CSV
             </button>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              PDF
+            <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition">
+              <Printer className="w-3.5 h-3.5" /> PDF
             </button>
           </div>
         </header>
@@ -2368,77 +1708,33 @@ function ConteudoEventosSemanais() {
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
               <h3 className="font-bold text-slate-900">Novo Fechamento Semanal</h3>
-              <button onClick={() => setNewEventModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setNewEventModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleCreateWeeklyEvent} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Nome da Edição *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Akatu Villa — 27/11/2026"
-                  value={newEventForm.name}
-                  onChange={(e) => setNewEventForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <input type="text" required placeholder="Ex: Akatu Villa — 27/11/2026" value={newEventForm.name} onChange={(e) => setNewEventForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Data do Evento</label>
-                  <input
-                    type="date"
-                    value={newEventForm.date}
-                    onChange={(e) => setNewEventForm((f) => ({ ...f, date: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <input type="date" value={newEventForm.date} onChange={(e) => setNewEventForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Local</label>
-                  <input
-                    type="text"
-                    value={newEventForm.venue}
-                    onChange={(e) => setNewEventForm((f) => ({ ...f, venue: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <input type="text" value={newEventForm.venue} onChange={(e) => setNewEventForm((f) => ({ ...f, venue: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
-
               <label className="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={newEventForm.cloneStructure}
-                  onChange={(e) => setNewEventForm((f) => ({ ...f, cloneStructure: e.target.checked }))}
-                  className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
-                />
+                <input type="checkbox" checked={newEventForm.cloneStructure} onChange={(e) => setNewEventForm((f) => ({ ...f, cloneStructure: e.target.checked }))} className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
                 <div className="text-xs text-indigo-950">
-                  <div className="font-semibold flex items-center gap-1">
-                    <Copy className="w-3.5 h-3.5" />
-                    Clonar estrutura do evento atual (recomendado)
-                  </div>
-                  <p className="text-indigo-800/80 mt-0.5">
-                    Mantém catálogo de bebidas/alimentação, funções de freelancers, custos gerais, operadores e promoters —
-                    zerando apenas quantidades e valores de caixa.
-                  </p>
+                  <div className="font-semibold flex items-center gap-1"><Copy className="w-3.5 h-3.5" /> Clonar estrutura do evento atual (recomendado)</div>
+                  <p className="text-indigo-800/80 mt-0.5">Mantém catálogo, equipe, custos gerais, operadores e promoters — zerando apenas quantidades e caixas.</p>
                 </div>
               </label>
-
               <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setNewEventModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition"
-                >
-                  Criar Edição
-                </button>
+                <button type="button" onClick={() => setNewEventModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+                <button type="submit" className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">Criar Edição</button>
               </div>
             </form>
           </div>
@@ -2452,23 +1748,10 @@ function ConteudoEventosSemanais() {
               <AlertTriangle className="w-6 h-6" />
               <h3 className="font-bold text-slate-900">Restaurar dados de demonstração?</h3>
             </div>
-            <p className="text-sm text-slate-600">
-              Isso substituirá as alterações salvas localmente pelos dados originais da planilha{' '}
-              <strong>Akatu Villa — 20/11/2026</strong>.
-            </p>
+            <p className="text-sm text-slate-600">Isso substituirá as alterações salvas localmente pelos dados originais da planilha <strong>Akatu Villa — 20/11/2026</strong>.</p>
             <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setResetModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleResetDemo}
-                className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg"
-              >
-                Restaurar Agora
-              </button>
+              <button onClick={() => setResetModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button onClick={handleResetDemo} className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg">Restaurar Agora</button>
             </div>
           </div>
         </div>
@@ -2476,11 +1759,7 @@ function ConteudoEventosSemanais() {
 
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 print:hidden">
-          <div
-            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${
-              toast.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'
-            }`}
-          >
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'}`}>
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{toast.message}</span>
           </div>
@@ -2489,13 +1768,10 @@ function ConteudoEventosSemanais() {
     </div>
   );
 }
+
 export default function EventosSemanaisPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-10 text-center text-slate-500">A carregar Eventos Semanais...</div>
-      }
-    >
+    <Suspense fallback={<div className="p-10 text-center text-slate-500">Carregando Eventos Semanais...</div>}>
       <ConteudoEventosSemanais />
     </Suspense>
   );
