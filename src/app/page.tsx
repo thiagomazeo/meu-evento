@@ -108,6 +108,7 @@ export default function Home() {
   const [carregando, setCarregando] = useState(true);
   const [usuario, setUsuario] = useState<any>(null);
   const [organizacao, setOrganizacao] = useState<Organizacao | null>(null);
+  const [nomeUsuario, setNomeUsuario] = useState('');
 
   // Autenticação
   const [modoAuth, setModoAuth] = useState<'login' | 'registo'>('login');
@@ -163,6 +164,16 @@ export default function Home() {
   }
 
   async function carregarDadosOrganizacao(userId: string) {
+    const { data: perfil } = await supabase
+      .from('perfis')
+      .select('nome_completo')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (perfil?.nome_completo) {
+      setNomeUsuario(perfil.nome_completo);
+    }
+
     const { data: membro } = await supabase
       .from('membros_organizacao')
       .select('organizacao_id, organizacoes(id, nome, plano)')
@@ -336,8 +347,30 @@ export default function Home() {
     await supabase.auth.signOut();
     setUsuario(null);
     setOrganizacao(null);
+    setNomeUsuario('');
     setEventos([]);
     setEmpresas([]);
+  }
+
+  async function handleExcluirConta() {
+    const confirmou = window.confirm(
+      'Tem certeza que deseja excluir sua conta? Esta ação é permanente e não pode ser desfeita.'
+    );
+    if (!confirmou) return;
+
+    const { error } = await supabase.rpc('excluir_minha_conta');
+    if (error) {
+      alert('Erro ao excluir conta: ' + error.message);
+      return;
+    }
+
+    await supabase.auth.signOut();
+    setUsuario(null);
+    setOrganizacao(null);
+    setNomeUsuario('');
+    setEventos([]);
+    setEmpresas([]);
+    alert('Sua conta foi excluída com sucesso.');
   }
 
   // --- EMPRESAS: CRIAR, EDITAR E EXCLUIR ---
@@ -700,7 +733,19 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4 print:hidden">
-            <span className="text-sm text-slate-600 hidden sm:inline">{usuario.email}</span>
+            <div className="hidden sm:flex flex-col items-end leading-tight">
+              <span className="text-xs font-semibold text-slate-900">
+                {nomeUsuario || 'Usuário'}
+              </span>
+              <span className="text-xs text-slate-500">{usuario.email}</span>
+              <button
+                type="button"
+                onClick={handleExcluirConta}
+                className="text-[11px] text-red-600 hover:text-red-800 hover:underline mt-0.5"
+              >
+                Excluir conta
+              </button>
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-red-600 font-medium"
