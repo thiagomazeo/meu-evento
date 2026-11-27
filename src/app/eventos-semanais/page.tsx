@@ -529,16 +529,7 @@ const openEditEventModal = () => {
     showToast(`Fechamento "${activeEvent.name}" excluído.`);
   };
 
-  const handleFinalizeEvent = () => {
-    const isFinalizado = activeEvent.status === 'Finalizado';
-    const nextStatus = isFinalizado ? 'Em Conferência' : 'Finalizado';
-    updateActiveEvent((ev) => ({ ...ev, status: nextStatus }));
-    showToast(
-      isFinalizado
-        ? 'Fechamento reaberto para conferência.'
-        : 'Fechamento salvo e marcado como Finalizado!'
-    );
-  };
+ 
   const handleFixPriceMismatches = () => {
     const mismatchMap = new Map(metrics.priceMismatches.map((m) => [m.id, m.catalogPrice]));
     updateActiveEvent((ev) => ({
@@ -1718,28 +1709,7 @@ const openEditEventModal = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-         <div className="min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">{activeEvent.name}</h1>
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    activeEvent.status === 'Finalizado' || activeEvent.status === 'Fechado e Aprovado'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {activeEvent.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" /> {activeEvent.date.split('-').reverse().join('/')}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
+        <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
                 <button
                   type="button"
                   onClick={openEditEventModal}
@@ -1754,20 +1724,7 @@ const openEditEventModal = () => {
                 >
                   <Trash2 className="w-3 h-3" /> Excluir
                 </button>
-                <button
-                  type="button"
-                  onClick={handleFinalizeEvent}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md transition ${
-                    activeEvent.status === 'Finalizado'
-                      ? 'bg-amber-100 hover:bg-amber-200 text-amber-800'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  }`}
-                >
-                  <CheckCircle2 className="w-3 h-3" />
-                  {activeEvent.status === 'Finalizado' ? 'Reabrir' : 'Finalizar'}
-                </button>
               </div>
-            </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">
