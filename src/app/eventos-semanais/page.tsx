@@ -2,6 +2,7 @@
 'use client';
 
 import React, { Suspense, useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import {
   LayoutDashboard,
   Wallet,
@@ -34,6 +35,7 @@ import {
   Copy,
   ArrowLeft,
   Pencil,
+  Upload,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'fechaevento_pro_v1_data';
@@ -363,9 +365,11 @@ function ConteudoEventosSemanais() {
   const [newEventForm, setNewEventForm] = useState({
     name: '',
     date: '',
-    venue: 'Akatu Villa',
+    venue: '',
     cloneStructure: true,
   });
+  const [importedExcel, setImportedExcel] = useState(null);
+  const [importedFileName, setImportedFileName] = useState('');
 
   const [catalogSubTab, setCatalogSubTab] = useState('beverages');
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -420,7 +424,156 @@ function ConteudoEventosSemanais() {
       prev.map((ev) => (ev.id === activeEvent.id ? (typeof updater === 'function' ? updater(ev) : updater) : ev))
     );
   };
+const parseNumber = (val) => {
+    if (typeof val === 'number') return val;
+    if (!val) return 0;
+    const cleaned = String(val).replace(/R\$\s?/gi, '').replace(/\./g, '').replace(',', '.').trim();
+    return parseFloat(cleaned) || 0;
+  };
 
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+
+      const parsed = {
+        cashiers: [],
+        beverages: [],
+        foods: [],
+        staff: [],
+        generalCosts: [],
+        attractions: [],
+        promoters: [],
+        production: [],
+        halfPriceConsumption: [],
+      };
+
+      workbook.SheetNames.forEach((sheetName) => {
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        const normSheet = normalizeText(sheetName);
+
+        // 1. Leitura por abas nomeadas (Excel multi-abas)
+        if (normSheet.includes('caixa')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) {
+              parsed.cashiers.push({
+                id: uid(),
+                name: String(r[0]),
+                debito: parseNumber(r[1]),
+                credito: parseNumber(r[2]),
+                pix: parseNumber(r[3]),
+                dinheiro: parseNumber(r[4]),
+                sistema: parseNumber(r[6] || r[5]),
+              });
+            }
+          });
+          return;
+        }
+
+        if (normSheet.includes('bebida')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.beverages.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('aliment') || normSheet.includes('comida') || normSheet.includes('cozinha')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.foods.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('equipe') || normSheet.includes('mao de obra') || normSheet.includes('freelancer')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.staff.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('geral') || normSheet.includes('estrutura')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.generalCosts.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('atraca')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.attractions.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('promoter')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0]) parsed.promoters.push({ id: uid(), name: String(r[0]), percent: parseNumber(r[1]) });
+          });
+          return;
+        }
+
+        if (normSheet.includes('produc')) {
+          rows.slice(1).forEach((r) => {
+            if (r[0] && r[1]) {
+              parsed.production.push({ id: uid(), beneficiary: String(r[0]), item: String(r[1]), qty: parseNumber(r[2]), unitPrice: parseNumber(r[3]) });
+            }
+          });
+          return;
+        }
+
+        // 2. Fallback: leitura de planilha única com seções (ex: CSV/Excel exportado pelo sistema)
+        let currentSection = '';
+        rows.forEach((r) => {
+          const first = normalizeText(String(r[0] || ''));
+          if (!first) return;
+          if (first.includes('conferencia de caixas')) { currentSection = 'cashiers'; return; }
+          if (first.includes('consumo bebidas')) { currentSection = 'beverages'; return; }
+          if (first.includes('consumo alimentacao')) { currentSection = 'foods'; return; }
+          if (first.includes('mao de obra')) { currentSection = 'staff'; return; }
+          if (first.includes('custos gerais')) { currentSection = 'generalCosts'; return; }
+          if (first.includes('producao & aniversarios')) { currentSection = 'production'; return; }
+          if (first.includes('consumo 50%')) { currentSection = 'halfPrice'; return; }
+          if (['operador', 'produto', 'funcao', 'item', 'beneficiario', 'pessoa'].includes(first)) return;
+
+          if (currentSection === 'cashiers') {
+            parsed.cashiers.push({ id: uid(), name: String(r[0]), debito: parseNumber(r[1]), credito: parseNumber(r[2]), pix: parseNumber(r[3]), dinheiro: parseNumber(r[4]), sistema: parseNumber(r[6] || r[5]) });
+          } else if (currentSection === 'beverages') {
+            parsed.beverages.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          } else if (currentSection === 'foods') {
+            parsed.foods.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          } else if (currentSection === 'staff') {
+            parsed.staff.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          } else if (currentSection === 'generalCosts') {
+            parsed.generalCosts.push({ id: uid(), name: String(r[0]), qty: parseNumber(r[1]), unitPrice: parseNumber(r[2]) });
+          } else if (currentSection === 'production' && r[1]) {
+            parsed.production.push({ id: uid(), beneficiary: String(r[0]), item: String(r[1]), qty: parseNumber(r[2]), unitPrice: parseNumber(r[3]) });
+          } else if (currentSection === 'halfPrice' && r[1]) {
+            parsed.halfPriceConsumption.push({ id: uid(), person: String(r[0]), item: String(r[1]), paymentMethod: String(r[2] || 'Débito'), qty: parseNumber(r[3]), unitPrice: parseNumber(r[4]), authorizedBy: String(r[6] || 'Produção') });
+          }
+        });
+      });
+
+      setImportedExcel(parsed);
+      setImportedFileName(file.name);
+
+      // Preenche o nome da edição automaticamente se estiver vazio
+      if (!newEventForm.name.trim()) {
+        const cleanName = file.name.replace(/\.(xlsx|xls|csv)$/i, '');
+        setNewEventForm((f) => ({ ...f, name: cleanName }));
+      }
+
+      showToast(`Planilha "${file.name}" carregada com sucesso!`);
+    } catch (err) {
+      console.error(err);
+      showToast('Erro ao ler a planilha. Verifique se é um arquivo Excel/CSV válido.', 'error');
+    } finally {
+      e.target.value = '';
+    }
+  };
   const handleCreateWeeklyEvent = (e) => {
     e.preventDefault();
     if (!newEventForm.name.trim()) {
@@ -470,10 +623,22 @@ function ConteudoEventosSemanais() {
           halfPriceConsumption: [],
           checklist: createInitialAkatuEvent().checklist.map((chk) => ({ ...chk, id: uid(), done: false })),
         };
-
+if (importedExcel) {
+      if (importedExcel.cashiers.length) createdEvent.cashiers = importedExcel.cashiers;
+      if (importedExcel.beverages.length) createdEvent.beverages = importedExcel.beverages;
+      if (importedExcel.foods.length) createdEvent.foods = importedExcel.foods;
+      if (importedExcel.staff.length) createdEvent.staff = importedExcel.staff;
+      if (importedExcel.generalCosts.length) createdEvent.generalCosts = importedExcel.generalCosts;
+      if (importedExcel.attractions.length) createdEvent.attractions = importedExcel.attractions;
+      if (importedExcel.promoters.length) createdEvent.promoters = importedExcel.promoters;
+      if (importedExcel.production.length) createdEvent.production = importedExcel.production;
+      if (importedExcel.halfPriceConsumption.length) createdEvent.halfPriceConsumption = importedExcel.halfPriceConsumption;
+    }
     setEvents((prev) => [createdEvent, ...prev]);
     setActiveEventId(newId);
     setNewEventModalOpen(false);
+    setImportedExcel(null);
+    setImportedFileName('');
     setNewEventForm({
       name: '',
       date: new Date().toISOString().slice(0, 10),
@@ -1870,6 +2035,40 @@ function ConteudoEventosSemanais() {
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Local</label>
                   <input type="text" value={newEventForm.venue} onChange={(e) => setNewEventForm((f) => ({ ...f, venue: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
+                <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Importar dados (opcional)
+                </label>
+                {importedFileName ? (
+                  <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-900">
+                    <div className="flex items-center gap-2 truncate">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span className="font-medium truncate">{importedFileName}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImportedExcel(null);
+                        setImportedFileName('');
+                      }}
+                      className="text-emerald-700 hover:text-rose-600 font-semibold shrink-0"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 rounded-lg text-xs font-semibold text-slate-700 cursor-pointer transition">
+                    <Upload className="w-4 h-4 text-indigo-600" />
+                    <span>Adicionar planilha em Excel (.xlsx, .xls, .csv)</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleImportExcel}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
               </div>
               {activeEvent && (
                 <label className="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 cursor-pointer">
