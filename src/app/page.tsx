@@ -608,7 +608,7 @@ export default function Home() {
                     required
                     value={nomeCompleto}
                     onChange={(e) => setNomeCompleto(e.target.value)}
-                    placeholder="Nome completo"
+                    placeholder="Nome Completo"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                   />
                 </div>
@@ -622,7 +622,7 @@ export default function Home() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Seu email"
+                placeholder="nome@produtora.com"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
               />
             </div>
@@ -789,6 +789,12 @@ export default function Home() {
             >
               <Building2 size={16} /> Empresas Realizadoras ({empresas.length})
             </button>
+            <a
+              href="/eventos-semanais"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
+            >
+              <Clock size={16} /> Eventos Semanais
+            </a>
           </div>
 
           {abaAtiva === 'dashboard' && (
