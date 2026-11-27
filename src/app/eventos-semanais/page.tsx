@@ -529,7 +529,16 @@ const openEditEventModal = () => {
     showToast(`Fechamento "${activeEvent.name}" excluído.`);
   };
 
- 
+  const handleFinalizeEvent = () => {
+    const isFinalizado = activeEvent.status === 'Finalizado';
+    const nextStatus = isFinalizado ? 'Em Conferência' : 'Finalizado';
+    updateActiveEvent((ev) => ({ ...ev, status: nextStatus }));
+    showToast(
+      isFinalizado
+        ? 'Fechamento reaberto para conferência.'
+        : 'Fechamento salvo e marcado como Finalizado!'
+    );
+  };
   const handleFixPriceMismatches = () => {
     const mismatchMap = new Map(metrics.priceMismatches.map((m) => [m.id, m.catalogPrice]));
     updateActiveEvent((ev) => ({
@@ -1709,7 +1718,40 @@ const openEditEventModal = () => {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
+         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              aria-label="Abrir menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                  {activeEvent.name}
+                </h1>
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    activeEvent.status === 'Fechado e Aprovado'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {activeEvent.status}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" />{' '}
+                  {activeEvent.date.split('-').reverse().join('/')}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
                 <button
                   type="button"
                   onClick={openEditEventModal}
@@ -1725,6 +1767,24 @@ const openEditEventModal = () => {
                   <Trash2 className="w-3 h-3" /> Excluir
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition"
+            >
+              <Download className="w-3.5 h-3.5" /> CSV
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition"
+            >
+              <Printer className="w-3.5 h-3.5" /> PDF
+            </button>
+          </div>
+        </header>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">
