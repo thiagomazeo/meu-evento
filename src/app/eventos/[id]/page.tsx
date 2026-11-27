@@ -750,9 +750,9 @@ function ConteudoEvento({
 
         <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-3 print:hidden">
           {[
+            { id: 'parceiros', label: `Fornecedores e Artistas (${parceiros.length})`, icon: UserCheck },
             { id: 'contratos', label: `Contratos (${contratos.length})`, icon: FileText },
             { id: 'pagamentos', label: `Pagamentos (${pagamentos.length})`, icon: DollarSign },
-            { id: 'parceiros', label: `Fornecedores e Artistas (${parceiros.length})`, icon: UserCheck },
             { id: 'fechamento', label: 'Fechamento & Taxas', icon: TrendingUp },
           ].map((item) => {
             const Icon = item.icon;
