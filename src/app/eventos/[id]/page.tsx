@@ -1112,7 +1112,7 @@ function ConteudoEvento({
                             ? 'Enviando...'
                             : p.comprovante_path
                             ? 'Trocar Comprovante'
-                            : 'Anexar Comprovante'}
+                            : 'Anexar Nota Fiscal'}
                           <input
                             type="file"
                             accept=".pdf,image/*"
