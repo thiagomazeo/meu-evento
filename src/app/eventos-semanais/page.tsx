@@ -1827,7 +1827,11 @@ if (importedExcel) {
       <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-slate-900 text-slate-100 flex flex-col shrink-0 transition-transform duration-200 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white shadow-lg shadow-indigo-600/30">FE</div>
+           <img
+  src="/icon.png"
+  alt="MEU EVENTO"
+  className="w-9 h-9 object-contain shrink-0"
+/>
             <div>
               <div className="font-bold text-base tracking-tight leading-none">Eventos Semanais</div>
               <div className="text-[11px] text-slate-400 mt-1">MEU EVENTO • Fechamento</div>
