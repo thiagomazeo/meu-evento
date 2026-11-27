@@ -33,6 +33,7 @@ import {
   Info,
   Copy,
   ArrowLeft,
+  Pencil,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'fechaevento_pro_v1_data';
@@ -354,6 +355,9 @@ function ConteudoEventosSemanais() {
 
   const [newEventModalOpen, setNewEventModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [editEventModalOpen, setEditEventModalOpen] = useState(false);
+  const [deleteEventModalOpen, setDeleteEventModalOpen] = useState(false);
+  const [editEventForm, setEditEventForm] = useState({ name: '', date: '', venue: '' });
   const [toast, setToast] = useState(null);
 
   const [newEventForm, setNewEventForm] = useState({
@@ -487,7 +491,54 @@ function ConteudoEventosSemanais() {
     setResetModalOpen(false);
     showToast('Dados restaurados para o fechamento oficial Akatu Villa (20/11/2026).');
   };
+const openEditEventModal = () => {
+    setEditEventForm({
+      name: activeEvent.name,
+      date: activeEvent.date,
+      venue: activeEvent.venue,
+    });
+    setEditEventModalOpen(true);
+  };
 
+  const handleSaveEditEvent = (e) => {
+    e.preventDefault();
+    if (!editEventForm.name.trim()) {
+      showToast('Informe o nome do fechamento.', 'error');
+      return;
+    }
+    updateActiveEvent((ev) => ({
+      ...ev,
+      name: editEventForm.name.trim(),
+      date: editEventForm.date || ev.date,
+      venue: editEventForm.venue.trim() || ev.venue,
+    }));
+    setEditEventModalOpen(false);
+    showToast('Dados do fechamento atualizados com sucesso!');
+  };
+
+  const handleDeleteActiveEvent = () => {
+    if (events.length <= 1) {
+      showToast('Você precisa manter pelo menos um fechamento cadastrado.', 'error');
+      setDeleteEventModalOpen(false);
+      return;
+    }
+    const remaining = events.filter((ev) => ev.id !== activeEvent.id);
+    setEvents(remaining);
+    setActiveEventId(remaining[0].id);
+    setDeleteEventModalOpen(false);
+    showToast(`Fechamento "${activeEvent.name}" excluído.`);
+  };
+
+  const handleFinalizeEvent = () => {
+    const isFinalizado = activeEvent.status === 'Finalizado';
+    const nextStatus = isFinalizado ? 'Em Conferência' : 'Finalizado';
+    updateActiveEvent((ev) => ({ ...ev, status: nextStatus }));
+    showToast(
+      isFinalizado
+        ? 'Fechamento reaberto para conferência.'
+        : 'Fechamento salvo e marcado como Finalizado!'
+    );
+  };
   const handleFixPriceMismatches = () => {
     const mismatchMap = new Map(metrics.priceMismatches.map((m) => [m.id, m.catalogPrice]));
     updateActiveEvent((ev) => ({
@@ -1667,30 +1718,56 @@ function ConteudoEventosSemanais() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"><Menu className="w-5 h-5" /></button>
-            <div className="min-w-0">
+         <div className="min-w-0">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">{activeEvent.name}</h1>
-                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${activeEvent.status === 'Fechado e Aprovado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    activeEvent.status === 'Finalizado' || activeEvent.status === 'Fechado e Aprovado'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
                   {activeEvent.status}
                 </span>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {activeEvent.date.split('-').reverse().join('/')}</span>
-                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}</span>
+                <span className="inline-flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" /> {activeEvent.date.split('-').reverse().join('/')}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
+                <button
+                  type="button"
+                  onClick={openEditEventModal}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-md transition"
+                >
+                  <Pencil className="w-3 h-3" /> Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteEventModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-md transition"
+                >
+                  <Trash2 className="w-3 h-3" /> Excluir
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFinalizeEvent}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md transition ${
+                    activeEvent.status === 'Finalizado'
+                      ? 'bg-amber-100 hover:bg-amber-200 text-amber-800'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  {activeEvent.status === 'Finalizado' ? 'Reabrir' : 'Finalizar'}
+                </button>
               </div>
             </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <button onClick={handleExportCSV} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition">
-              <Download className="w-3.5 h-3.5" /> CSV
-            </button>
-            <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition">
-              <Printer className="w-3.5 h-3.5" /> PDF
-            </button>
-          </div>
         </header>
 
         <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">
@@ -1756,7 +1833,93 @@ function ConteudoEventosSemanais() {
           </div>
         </div>
       )}
+{editEventModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900">Editar Fechamento</h3>
+              <button onClick={() => setEditEventModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEditEvent} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nome do Evento *</label>
+                <input
+                  type="text"
+                  required
+                  value={editEventForm.name}
+                  onChange={(e) => setEditEventForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Data</label>
+                  <input
+                    type="date"
+                    value={editEventForm.date}
+                    onChange={(e) => setEditEventForm((f) => ({ ...f, date: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Local</label>
+                  <input
+                    type="text"
+                    value={editEventForm.venue}
+                    onChange={(e) => setEditEventForm((f) => ({ ...f, venue: e.target.value }))}
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditEventModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition"
+                >
+                  Salvar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
+      {deleteEventModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="font-bold text-slate-900">Excluir este fechamento?</h3>
+            </div>
+            <p className="text-sm text-slate-600">
+              Tem certeza que deseja excluir permanentemente o fechamento <strong>{activeEvent.name}</strong>? Essa ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteEventModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteActiveEvent}
+                className="px-4 py-2 text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg"
+              >
+                Excluir Agora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 print:hidden">
           <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'}`}>
