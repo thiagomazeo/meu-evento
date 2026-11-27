@@ -3,6 +3,7 @@
 
 import React, { Suspense, useState, useEffect, useMemo } from 'react';
 import * as XLSX from 'xlsx';
+import { supabase } from '@/lib/supabase';
 import {
   LayoutDashboard,
   Wallet,
@@ -37,8 +38,6 @@ import {
   Pencil,
   Upload,
 } from 'lucide-react';
-
-const STORAGE_KEY = 'fechaevento_pro_v1_data';
 
 const formatBRL = (value) => {
   const num = Number(value) || 0;
@@ -348,13 +347,13 @@ function computeEventMetrics(event) {
 }
 
 function ConteudoEventosSemanais() {
-  const [events, setEvents] = useState([createInitialAkatuEvent()]);
+  const [events, setEvents] = useState([]);
   const [hydrated, setHydrated] = useState(false);
 
-  const [activeEventId, setActiveEventId] = useState('akatu-2026-11-20');
+  const [activeEventId, setActiveEventId] = useState('');
   const [activeTab, setActiveTab] = useState('dre');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const [storageKey, setStorageKey] = useState(null);
   const [newEventModalOpen, setNewEventModalOpen] = useState(false);
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [editEventModalOpen, setEditEventModalOpen] = useState(false);
@@ -376,37 +375,51 @@ function ConteudoEventosSemanais() {
   const [onlyConsumed, setOnlyConsumed] = useState(false);
   const [prodSubTab, setProdSubTab] = useState('production');
 
-  useEffect(() => {
+ useEffect(() => {
     setNewEventForm((f) => ({ ...f, date: new Date().toISOString().slice(0, 10) }));
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setEvents(parsed);
-          setActiveEventId(parsed[0]?.id || '');
+
+    async function carregarPorUsuario() {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const userId = data?.user?.id;
+
+        if (!userId) {
+          setHydrated(true);
+          return;
         }
+
+        const key = `fechaevento_pro_v1_data_${userId}`;
+        setStorageKey(key);
+
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            setEvents(parsed);
+            setActiveEventId(parsed[0]?.id || '');
+          }
+        } else {
+          setEvents([]);
+          setActiveEventId('');
+        }
+      } catch (e) {
+        console.error('Erro ao carregar dados do usuário:', e);
+      } finally {
+        setHydrated(true);
       }
-    } catch (e) {
-      console.error('Erro ao ler localStorage:', e);
-    } finally {
-      setHydrated(true);
     }
+
+    carregarPorUsuario();
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !storageKey) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+      localStorage.setItem(storageKey, JSON.stringify(events));
     } catch (e) {
       console.error('Erro ao salvar localStorage:', e);
     }
-  }, [events, hydrated]);
-
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+  }, [events, hydrated, storageKey]);
 
   const activeEvent = useMemo(
     () => events.find((e) => e.id === activeEventId) || events[0] || null,
