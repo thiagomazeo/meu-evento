@@ -595,7 +595,7 @@ export default function Home() {
                     required
                     value={nomeProdutora}
                     onChange={(e) => setNomeProdutora(e.target.value)}
-                    placeholder="Ex: Horizonte Eventos"
+                    placeholder="Nome da Produtora"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                   />
                 </div>
@@ -608,7 +608,7 @@ export default function Home() {
                     required
                     value={nomeCompleto}
                     onChange={(e) => setNomeCompleto(e.target.value)}
-                    placeholder="Ex: Thiago Mazeo"
+                    placeholder="Nome completo"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
                   />
                 </div>
@@ -622,7 +622,7 @@ export default function Home() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="nome@produtora.com"
+                placeholder="Seu email"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900"
               />
             </div>
