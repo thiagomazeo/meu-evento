@@ -1868,7 +1868,7 @@ function ConteudoEventosSemanais() {
             <form onSubmit={handleCreateWeeklyEvent} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Nome da Edição *</label>
-                <input type="text" required placeholder="Ex: Akatu Villa — 27/11/2026" value={newEventForm.name} onChange={(e) => setNewEventForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input type="text" required placeholder="Nome do evento" value={newEventForm.name} onChange={(e) => setNewEventForm((f) => ({ ...f, name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
