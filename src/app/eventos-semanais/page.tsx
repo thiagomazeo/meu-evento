@@ -378,9 +378,9 @@ function ConteudoEventosSemanais() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setEvents(parsed);
-          setActiveEventId(parsed[0].id);
+          setActiveEventId(parsed[0]?.id || '');
         }
       }
     } catch (e) {
@@ -405,13 +405,17 @@ function ConteudoEventosSemanais() {
   };
 
   const activeEvent = useMemo(
-    () => events.find((e) => e.id === activeEventId) || events[0],
+    () => events.find((e) => e.id === activeEventId) || events[0] || null,
     [events, activeEventId]
   );
 
-  const metrics = useMemo(() => computeEventMetrics(activeEvent), [activeEvent]);
+  const metrics = useMemo(
+    () => (activeEvent ? computeEventMetrics(activeEvent) : null),
+    [activeEvent]
+  );
 
   const updateActiveEvent = (updater) => {
+    if (!activeEvent) return;
     setEvents((prev) =>
       prev.map((ev) => (ev.id === activeEvent.id ? (typeof updater === 'function' ? updater(ev) : updater) : ev))
     );
@@ -427,7 +431,7 @@ function ConteudoEventosSemanais() {
     const base = activeEvent;
     const newId = uid();
 
-    const createdEvent = newEventForm.cloneStructure
+    const createdEvent = newEventForm.cloneStructure && base
       ? {
           id: newId,
           name: newEventForm.name.trim(),
@@ -473,12 +477,12 @@ function ConteudoEventosSemanais() {
     setNewEventForm({
       name: '',
       date: new Date().toISOString().slice(0, 10),
-      venue: base.venue,
+      venue: base?.venue || 'Local do Evento',
       cloneStructure: true,
     });
     setActiveTab('dre');
     showToast(
-      newEventForm.cloneStructure
+      newEventForm.cloneStructure && base
         ? `Edição "${createdEvent.name}" criada com catálogo e equipe clonados!`
         : `Edição "${createdEvent.name}" criada em branco.`
     );
@@ -491,7 +495,9 @@ function ConteudoEventosSemanais() {
     setResetModalOpen(false);
     showToast('Dados restaurados para o fechamento oficial Akatu Villa (20/11/2026).');
   };
-const openEditEventModal = () => {
+
+  const openEditEventModal = () => {
+    if (!activeEvent) return;
     setEditEventForm({
       name: activeEvent.name,
       date: activeEvent.date,
@@ -517,29 +523,17 @@ const openEditEventModal = () => {
   };
 
   const handleDeleteActiveEvent = () => {
-    if (events.length <= 1) {
-      showToast('Você precisa manter pelo menos um fechamento cadastrado.', 'error');
-      setDeleteEventModalOpen(false);
-      return;
-    }
+    if (!activeEvent) return;
+    const nomeExcluido = activeEvent.name;
     const remaining = events.filter((ev) => ev.id !== activeEvent.id);
     setEvents(remaining);
-    setActiveEventId(remaining[0].id);
+    setActiveEventId(remaining[0]?.id || '');
     setDeleteEventModalOpen(false);
-    showToast(`Fechamento "${activeEvent.name}" excluído.`);
+    showToast(`Fechamento "${nomeExcluido}" excluído.`);
   };
 
-  const handleFinalizeEvent = () => {
-    const isFinalizado = activeEvent.status === 'Finalizado';
-    const nextStatus = isFinalizado ? 'Em Conferência' : 'Finalizado';
-    updateActiveEvent((ev) => ({ ...ev, status: nextStatus }));
-    showToast(
-      isFinalizado
-        ? 'Fechamento reaberto para conferência.'
-        : 'Fechamento salvo e marcado como Finalizado!'
-    );
-  };
   const handleFixPriceMismatches = () => {
+    if (!metrics) return;
     const mismatchMap = new Map(metrics.priceMismatches.map((m) => [m.id, m.catalogPrice]));
     updateActiveEvent((ev) => ({
       ...ev,
@@ -551,6 +545,7 @@ const openEditEventModal = () => {
   };
 
   const handleExportCSV = () => {
+    if (!activeEvent || !metrics) return;
     const rows = [
       ['FECHAEVENTO PRO - RELATORIO DE FECHAMENTO SEMANAL'],
       ['Evento', activeEvent.name, 'Data', activeEvent.date, 'Local', activeEvent.venue, 'Status', activeEvent.status],
@@ -642,10 +637,10 @@ const openEditEventModal = () => {
 
   const navItems = [
     { id: 'dre', label: 'Resumo & DRE', icon: LayoutDashboard },
-    { id: 'cashiers', label: 'Conferência de Caixas', icon: Wallet, badge: Math.abs(metrics.totalCashierDiff) >= 0.01 ? 'Erro' : null },
+    { id: 'cashiers', label: 'Conferência de Caixas', icon: Wallet, badge: metrics && Math.abs(metrics.totalCashierDiff) >= 0.01 ? 'Erro' : null },
     { id: 'catalog', label: 'Bebidas & Alimentação', icon: Wine },
     { id: 'operations', label: 'Equipe, Estrutura & Atrações', icon: Users },
-    { id: 'production', label: 'Produção, Aniversários & 50%', icon: Gift, badge: metrics.priceMismatches.length > 0 ? `${metrics.priceMismatches.length}` : null },
+    { id: 'production', label: 'Produção, Aniversários & 50%', icon: Gift, badge: metrics && metrics.priceMismatches.length > 0 ? `${metrics.priceMismatches.length}` : null },
     { id: 'audit', label: 'Conferência & Exportar', icon: CheckSquare },
   ];
 
@@ -1684,10 +1679,33 @@ const openEditEventModal = () => {
 
         <div className="p-4 border-b border-slate-800 space-y-2.5">
           <label className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 block">Edição Semanal Ativa</label>
-          <select value={activeEvent.id} onChange={(e) => setActiveEventId(e.target.value)} className="w-full bg-slate-800 border border-slate-700 text-sm font-medium text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+          <select
+            value={activeEvent?.id || ''}
+            onChange={(e) => setActiveEventId(e.target.value)}
+            disabled={events.length === 0}
+            className="w-full bg-slate-800 border border-slate-700 text-sm font-medium text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+          >
+            {events.length === 0 ? (
+              <option value="">Nenhum fechamento</option>
+            ) : (
+              events.map((ev) => (
+                <option key={ev.id} value={ev.id}>
+                  {ev.name}
+                </option>
+              ))
+            )}
           </select>
-          <button onClick={() => { setNewEventForm((f) => ({ ...f, venue: activeEvent.venue })); setNewEventModalOpen(true); }} className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-sm">
+          <button
+            onClick={() => {
+              setNewEventForm((f) => ({
+                ...f,
+                venue: activeEvent?.venue || '',
+                cloneStructure: Boolean(activeEvent),
+              }));
+              setNewEventModalOpen(true);
+            }}
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+          >
             <Plus className="w-4 h-4" /> Novo Fechamento Semanal
           </button>
         </div>
@@ -1717,84 +1735,127 @@ const openEditEventModal = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-              aria-label="Abrir menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">
-                  {activeEvent.name}
-                </h1>
-                <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                    activeEvent.status === 'Fechado e Aprovado'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}
-                >
-                  {activeEvent.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                <span className="inline-flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />{' '}
-                  {activeEvent.date.split('-').reverse().join('/')}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
+        {activeEvent ? (
+          <>
+            <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 <button
-                  type="button"
-                  onClick={openEditEventModal}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-md transition"
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                  aria-label="Abrir menu"
                 >
-                  <Pencil className="w-3 h-3" /> Editar
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h1 className="text-base sm:text-lg font-bold text-slate-900 truncate">
+                      {activeEvent.name}
+                    </h1>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        activeEvent.status === 'Fechado e Aprovado'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {activeEvent.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />{' '}
+                      {activeEvent.date.split('-').reverse().join('/')}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" /> {activeEvent.venue}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap print:hidden">
+                    <button
+                      type="button"
+                      onClick={openEditEventModal}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-md transition"
+                    >
+                      <Pencil className="w-3 h-3" /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteEventModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-md transition"
+                    >
+                      <Trash2 className="w-3 h-3" /> Excluir
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition"
+                >
+                  <Download className="w-3.5 h-3.5" /> CSV
                 </button>
                 <button
-                  type="button"
-                  onClick={() => setDeleteEventModalOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-md transition"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition"
                 >
-                  <Trash2 className="w-3 h-3" /> Excluir
+                  <Printer className="w-3.5 h-3.5" /> PDF
                 </button>
               </div>
+            </header>
+
+            <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">
+              {activeTab === 'dre' && renderDREModule()}
+              {activeTab === 'cashiers' && renderCashiersModule()}
+              {activeTab === 'catalog' && renderCatalogModule()}
+              {activeTab === 'operations' && renderOperationsModule()}
+              {activeTab === 'production' && renderProductionModule()}
+              {activeTab === 'audit' && renderAuditModule()}
+            </main>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="lg:hidden self-start mb-auto">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+                aria-label="Abrir menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
+              <Calendar className="w-7 h-7" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">Nenhum fechamento semanal cadastrado</h2>
+            <p className="text-sm text-slate-500 mt-1 max-w-md">
+              Crie um novo fechamento do zero ou restaure os dados de demonstração para começar.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setNewEventForm({
+                    name: '',
+                    date: new Date().toISOString().slice(0, 10),
+                    venue: '',
+                    cloneStructure: false,
+                  });
+                  setNewEventModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
+              >
+                <Plus className="w-4 h-4" /> Novo Fechamento Semanal
+              </button>
+              <button
+                onClick={() => setResetModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition"
+              >
+                <RotateCcw className="w-4 h-4" /> Restaurar Demo
+              </button>
             </div>
           </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition"
-            >
-              <Download className="w-3.5 h-3.5" /> CSV
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition"
-            >
-              <Printer className="w-3.5 h-3.5" /> PDF
-            </button>
-          </div>
-        </header>
-        </header>
-
-        <main className="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto">
-          {activeTab === 'dre' && renderDREModule()}
-          {activeTab === 'cashiers' && renderCashiersModule()}
-          {activeTab === 'catalog' && renderCatalogModule()}
-          {activeTab === 'operations' && renderOperationsModule()}
-          {activeTab === 'production' && renderProductionModule()}
-          {activeTab === 'audit' && renderAuditModule()}
-        </main>
+        )}
       </div>
 
       {newEventModalOpen && (
@@ -1819,13 +1880,15 @@ const openEditEventModal = () => {
                   <input type="text" value={newEventForm.venue} onChange={(e) => setNewEventForm((f) => ({ ...f, venue: e.target.value }))} className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               </div>
-              <label className="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 cursor-pointer">
-                <input type="checkbox" checked={newEventForm.cloneStructure} onChange={(e) => setNewEventForm((f) => ({ ...f, cloneStructure: e.target.checked }))} className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
-                <div className="text-xs text-indigo-950">
-                  <div className="font-semibold flex items-center gap-1"><Copy className="w-3.5 h-3.5" /> Clonar estrutura do evento atual (recomendado)</div>
-                  <p className="text-indigo-800/80 mt-0.5">Mantém catálogo, equipe, custos gerais, operadores e promoters — zerando apenas quantidades e caixas.</p>
-                </div>
-              </label>
+              {activeEvent && (
+                <label className="flex items-start gap-3 p-3.5 rounded-xl bg-indigo-50 border border-indigo-100 cursor-pointer">
+                  <input type="checkbox" checked={newEventForm.cloneStructure} onChange={(e) => setNewEventForm((f) => ({ ...f, cloneStructure: e.target.checked }))} className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+                  <div className="text-xs text-indigo-950">
+                    <div className="font-semibold flex items-center gap-1"><Copy className="w-3.5 h-3.5" /> Clonar estrutura do evento atual (recomendado)</div>
+                    <p className="text-indigo-800/80 mt-0.5">Mantém catálogo, equipe, custos gerais, operadores e promoters — zerando apenas quantidades e caixas.</p>
+                  </div>
+                </label>
+              )}
               <div className="flex justify-end gap-2 pt-2">
                 <button type="button" onClick={() => setNewEventModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancelar</button>
                 <button type="submit" className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">Criar Edição</button>
@@ -1850,7 +1913,8 @@ const openEditEventModal = () => {
           </div>
         </div>
       )}
-{editEventModalOpen && (
+
+      {editEventModalOpen && activeEvent && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
@@ -1910,7 +1974,7 @@ const openEditEventModal = () => {
         </div>
       )}
 
-      {deleteEventModalOpen && (
+      {deleteEventModalOpen && activeEvent && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
             <div className="flex items-center gap-3 text-rose-600">
@@ -1937,6 +2001,7 @@ const openEditEventModal = () => {
           </div>
         </div>
       )}
+
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 print:hidden">
           <div className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === 'error' ? 'bg-rose-600' : 'bg-slate-900'}`}>
