@@ -1727,10 +1727,7 @@ function ConteudoEventosSemanais() {
         </nav>
 
         <div className="p-4 border-t border-slate-800 space-y-2">
-          <button onClick={() => setResetModalOpen(true)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition">
-            <RotateCcw className="w-3.5 h-3.5" /> Restaurar Demo (20/11/2026)
-          </button>
-          <div className="text-[11px] text-center text-slate-500">Salvamento automático ativo</div>
+                   <div className="text-[11px] text-center text-slate-500">Salvamento automático ativo</div>
         </div>
       </aside>
 
@@ -1828,9 +1825,9 @@ function ConteudoEventosSemanais() {
             <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-4">
               <Calendar className="w-7 h-7" />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Nenhum fechamento semanal cadastrado</h2>
+           <h2 className="text-lg font-bold text-slate-900">Nenhum fechamento semanal cadastrado</h2>
             <p className="text-sm text-slate-500 mt-1 max-w-md">
-              Crie um novo fechamento do zero ou restaure os dados de demonstração para começar.
+              Crie um novo fechamento semanal para começar.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
               <button
@@ -1846,12 +1843,6 @@ function ConteudoEventosSemanais() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition"
               >
                 <Plus className="w-4 h-4" /> Novo Fechamento Semanal
-              </button>
-              <button
-                onClick={() => setResetModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-lg transition"
-              >
-                <RotateCcw className="w-4 h-4" /> Restaurar Demo
               </button>
             </div>
           </div>
