@@ -63,7 +63,7 @@ type Contrato = {
   parceiro_id: string;
   descricao_servico: string;
   valor_total: number;
-  status_assinatura: 'pendente' | 'enviado' | 'assinado' | 'cancelado';
+  status_assinatura: 'pendente' | 'enviado' | 'assinado' | 'cancelado' | 'sem_contrato';
   arquivo_contrato_path: string | null;
   parceiros?: Parceiro;
 };
@@ -952,16 +952,21 @@ function ConteudoEvento({
                         value={c.status_assinatura}
                         onChange={(e) => alterarStatusAssinatura(c.id, e.target.value)}
                         className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                          c.status_assinatura === 'assinado'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : c.status_assinatura === 'enviado'
-                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                     c.status_assinatura === 'assinado'
+  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+  : c.status_assinatura === 'enviado'
+  ? 'bg-blue-50 text-blue-700 border-blue-300'
+  : c.status_assinatura === 'sem_contrato'
+  ? 'bg-slate-100 text-slate-700 border-slate-300'
+  : c.status_assinatura === 'cancelado'
+  ? 'bg-red-50 text-red-700 border-red-300'
+  : 'bg-amber-50 text-amber-800 border-amber-300'
                         }`}
                       >
                         <option value="pendente">Assinatura Pendente</option>
                         <option value="enviado">Enviado p/ Assinatura</option>
                         <option value="assinado">Contrato Assinado</option>
+                        <option value="sem_contrato">Não tem contrato</option>
                         <option value="cancelado">Cancelado</option>
                       </select>
                     </div>
